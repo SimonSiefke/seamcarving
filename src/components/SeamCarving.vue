@@ -11,7 +11,8 @@
       <div class="item">
         <label>Width</label>
         <paper-range-slider
-          step="1"
+          :step="1"
+          :min="1"
           :max="maxWidth"
           :value-max="wantedWidth"
           single-slider
@@ -21,7 +22,8 @@
       <div class="item">
         <label>Height</label>
         <paper-range-slider
-          step="1"
+          :step="1"
+          :min="1"
           :max="maxHeight"
           :value-max="wantedHeight"
           single-slider

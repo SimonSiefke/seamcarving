@@ -10,8 +10,8 @@ export default function removeSeam(imageData: ImageData, seam: Uint32Array) {
   let newImageDataIndex = 0;
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
-      for (let i = 0; i < 4; i++) {
-        if (x !== seam[y]) {
+      if (x !== seam[y]) {
+        for (let i = 0; i < 4; i++) {
           const imageDataIndex = (y * width + x) * 4 + i;
           newImageData[newImageDataIndex++] = imageData.data[imageDataIndex];
         }
