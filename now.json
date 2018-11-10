@@ -1,0 +1,10 @@
+{
+  "name": "Seam Carving",
+  "type": "static",
+  "static": {
+    "public": "dist"
+  },
+  "public": true,
+  "alias": "seamcarving",
+  "files": ["dist"]
+}
