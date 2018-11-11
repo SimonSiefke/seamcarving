@@ -69,7 +69,9 @@ export default class SeamCarving extends Vue {
    * Data *
    ********/
   // @ts-ignore
-  worker = new Worker("./worker.ts", { type: "module" });
+  worker1 = new Worker("./worker.ts", { type: "module" });
+  // @ts-ignore
+  worker2 = new Worker("./worker.ts", { type: "module" });
   private wantedWidth_ = 100;
   private wantedHeight_ = 100;
   private currentWidth = 100;
@@ -115,32 +117,24 @@ export default class SeamCarving extends Vue {
    * Watchers *
    ************/
   @Watch("wantedWidth")
-  private async adjustWidth(value: number) {
+  private async adjustWantedWidth(value: number) {
     if (value === this.currentWidth) {
       return;
     }
-    this.hasStopped = false;
-    // const numberOfAdditions = value - this.currentWidth;
-    const numberOfRemovals = this.currentWidth - value;
-    // if (numberOfAdditions < 0) {
-    // await this.showSeams(numberOfRemovals);
-    // await new Promise(resolve => setTimeout(resolve, 1000));
-    // const ctx = this.$refs.canvas.getContext(
-    //   "2d"
-    // ) as CanvasRenderingContext2D;
-    // ctx.putImageData(this.originalImageData!, 0, 0);
-    // await this.removeSeams(numberOfRemovals);
-    // await this.removeSmallSeams(numberOfRemovals);
-    await this.showSmallSeams(numberOfRemovals);
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    await this.reset();
-    await this.removeSmallSeams(numberOfRemovals);
-    // await this.showSeams(numberOfRemovals);
-    // } else if (numberOfAdditions === 0) {
-    //   // do nothing
-    // } else {
-    //   await this.addSeams(numberOfAdditions);
-    // }
+    const numberOfAdditions = value - this.currentWidth;
+    if (numberOfAdditions > 0) {
+      this.addSeams(numberOfAdditions);
+    } else if (numberOfAdditions < 0) {
+      this.removeSeams(numberOfAdditions);
+    }
+  }
+
+  @Watch("currentWidth")
+  private async adjustCurrentWidth(value: number) {
+    if (value === this.currentWidth) {
+      return;
+    }
+    this.$refs.canvas.width = value;
   }
 
   /************
@@ -151,7 +145,7 @@ export default class SeamCarving extends Vue {
       this.$refs.image.addEventListener("load", resolve);
     });
     await this.onImageChanged();
-    this.wantedWidth -= 135;
+    this.wantedWidth += 135;
   }
 
   /************
@@ -205,7 +199,7 @@ export default class SeamCarving extends Vue {
       ) as CanvasRenderingContext2D;
       const imageData = ctx.getImageData(0, 0, width, height);
 
-      this.worker.onmessage = (event: any) => {
+      this.worker1.onmessage = (event: any) => {
         if (this.shouldStop) {
           this.hasStopped = true;
           return;
@@ -225,7 +219,7 @@ export default class SeamCarving extends Vue {
         resolve();
       };
 
-      this.worker.postMessage(
+      this.worker1.postMessage(
         {
           action,
           data: {
@@ -257,238 +251,23 @@ export default class SeamCarving extends Vue {
   }
 
   private async addSeams(numberOfSeams: number) {
-    return new Promise(resolve => {
-      const width = this.$refs.canvas.width;
-      const height = this.$refs.canvas.height;
-      const newWidth = width + numberOfSeams;
-      const ctx = this.$refs.canvas.getContext(
-        "2d"
-      ) as CanvasRenderingContext2D;
-      const imageData = ctx.getImageData(0, 0, width, height);
-
-      this.worker.onmessage = (event: any) => {
-        if (this.shouldStop) {
-          this.hasStopped = true;
-          return;
-        }
-        const action = event.data.action;
-        const data = event.data.data;
-        const buffer = data.buffer;
-
-        const newImageData = new ImageData(
-          new Uint8ClampedArray(buffer),
-          newWidth,
-          height
-        );
-        this.$refs.canvas.width = newWidth;
-        this.currentWidth = newWidth;
-        ctx.putImageData(newImageData, 0, 0);
-        resolve();
-      };
-
-      this.worker.postMessage(
-        {
-          action: "ADD_SEAMS",
-          data: {
-            width,
-            height,
-            buffer: imageData.data.buffer,
-            numberOfSeams
-          }
-        },
-        [imageData.data.buffer]
-      );
-    });
+    this.applyAction("ADD_SEAMS", numberOfSeams);
   }
 
   private async removeSeams(numberOfSeams: number) {
-    return new Promise(resolve => {
-      const width = this.$refs.canvas.width;
-      const height = this.$refs.canvas.height;
-      const newWidth = width - numberOfSeams;
-      const ctx = this.$refs.canvas.getContext(
-        "2d"
-      ) as CanvasRenderingContext2D;
-      const imageData = ctx.getImageData(0, 0, width, height);
-
-      this.worker.onmessage = (event: any) => {
-        if (this.shouldStop) {
-          this.hasStopped = true;
-          return;
-        }
-        const action = event.data.action;
-        const data = event.data.data;
-        const buffer = data.buffer;
-
-        const newImageData = new ImageData(
-          new Uint8ClampedArray(buffer),
-          newWidth,
-          height
-        );
-        this.$refs.canvas.width = newWidth;
-        this.currentWidth = newWidth;
-        ctx.putImageData(newImageData, 0, 0);
-        resolve();
-      };
-
-      this.worker.postMessage(
-        {
-          action: "REMOVE_SEAMS",
-          data: {
-            width,
-            height,
-            buffer: imageData.data.buffer,
-            numberOfSeams
-          }
-        },
-        [imageData.data.buffer]
-      );
-    });
+    this.applyAction("REMOVE_SEAMS", numberOfSeams);
   }
 
   private async removeSmallSeams(numberOfSeams: number) {
-    numberOfSeams = Math.abs(numberOfSeams);
-    // this.applyAction("REMOVE_SMALL_SEAMS", numberOfSeams);
-    return new Promise(resolve => {
-      const width = this.$refs.canvas.width;
-      const height = this.$refs.canvas.height;
-      const ctx = this.$refs.canvas.getContext(
-        "2d"
-      ) as CanvasRenderingContext2D;
-      const imageData = ctx.getImageData(0, 0, width, height);
-
-      this.worker.onmessage = (event: any) => {
-        if (this.shouldStop) {
-          this.hasStopped = true;
-          return;
-        }
-        const action = event.data.action;
-        const data = event.data.data;
-        const buffer = data.buffer;
-
-        console.log(this.currentWidth);
-        console.log(numberOfSeams);
-        console.log(data);
-
-        const newImageData = new ImageData(
-          new Uint8ClampedArray(buffer),
-          data.width,
-          data.height
-        );
-        this.$refs.canvas.width = data.width;
-        this.currentWidth = data.width;
-        ctx.putImageData(newImageData, 0, 0);
-        resolve();
-      };
-
-      this.worker.postMessage(
-        {
-          action: "REMOVE_SMALL_SEAMS",
-          data: {
-            width,
-            height,
-            buffer: imageData.data.buffer,
-            numberOfSeams
-          }
-        },
-        [imageData.data.buffer]
-      );
-    });
+    this.applyAction("REMOVE_SMALL_SEAMS", numberOfSeams);
   }
 
   private async showSeams(numberOfSeams: number) {
-    return new Promise(resolve => {
-      const width = this.$refs.canvas.width;
-      const height = this.$refs.canvas.height;
-      const newWidth = width;
-      const ctx = this.$refs.canvas.getContext(
-        "2d"
-      ) as CanvasRenderingContext2D;
-      const imageData = ctx.getImageData(0, 0, width, height);
-
-      this.worker.onmessage = (event: any) => {
-        if (this.shouldStop) {
-          this.hasStopped = true;
-          return;
-        }
-        const action = event.data.action;
-        const data = event.data.data;
-        const buffer = data.buffer;
-
-        const newImageData = new ImageData(
-          new Uint8ClampedArray(buffer),
-          newWidth,
-          height
-        );
-        this.$refs.canvas.width = newWidth;
-        this.currentWidth = newWidth;
-        ctx.putImageData(newImageData, 0, 0);
-        resolve();
-      };
-
-      this.worker.postMessage(
-        {
-          action: "SHOW_SEAMS",
-          data: {
-            width,
-            height,
-            buffer: imageData.data.buffer,
-            numberOfSeams
-          }
-        },
-        [imageData.data.buffer]
-      );
-    });
+    this.applyAction("SHOW_SEAMS", numberOfSeams);
   }
+
   private async showSmallSeams(numberOfSeams: number) {
     this.applyAction("SHOW_SMALL_SEAMS", numberOfSeams);
-    // if (this.operationInProgress) {
-    //   return;
-    // }
-    // this.operationInProgress = true;
-    // return new Promise(resolve => {
-    //   const width = this.$refs.canvas.width;
-    //   const height = this.$refs.canvas.height;
-    //   const newWidth = width;
-    //   const ctx = this.$refs.canvas.getContext(
-    //     "2d"
-    //   ) as CanvasRenderingContext2D;
-    //   const imageData = ctx.getImageData(0, 0, width, height);
-
-    //   this.worker.onmessage = (event: any) => {
-    //     if (this.shouldStop) {
-    //       this.hasStopped = true;
-    //       return;
-    //     }
-    //     const action = event.data.action;
-    //     const data = event.data.data;
-    //     const buffer = data.buffer;
-
-    //     const newImageData = new ImageData(
-    //       new Uint8ClampedArray(buffer),
-    //       newWidth,
-    //       height
-    //     );
-    //     this.$refs.canvas.width = newWidth;
-    //     this.currentWidth = newWidth;
-    //     ctx.putImageData(newImageData, 0, 0);
-    //     this.operationInProgress = false;
-    //     resolve();
-    //   };
-
-    //   this.worker.postMessage(
-    //     {
-    //       action: "SHOW_SMALL_SEAMS",
-    //       data: {
-    //         width,
-    //         height,
-    //         buffer: imageData.data.buffer,
-    //         numberOfSeams
-    //       }
-    //     },
-    //     [imageData.data.buffer]
-    //   );
-    // });
   }
   /********
    * Refs *

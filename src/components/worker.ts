@@ -80,8 +80,8 @@ function onRemoveSeams(
       action: "REMOVE_SEAM",
       data: {
         buffer: newImageData.data.buffer,
-        width: width - 1,
-        height
+        width: newImageData.width,
+        height: newImageData.height
       }
     },
     // @ts-ignore
@@ -104,8 +104,8 @@ function onAddSeams(
       action: "ADD_SEAM",
       data: {
         buffer: newImageData.data.buffer,
-        width: width - 1,
-        height
+        width: newImageData.width,
+        height: newImageData.height
       }
     },
     // @ts-ignore
