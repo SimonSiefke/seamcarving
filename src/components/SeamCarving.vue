@@ -77,7 +77,6 @@ export default class SeamCarving extends Vue {
   private originalImageData: ImageData | null = null;
   private shouldStop = false;
   private hasStopped = true;
-  private operationInProgress = false;
 
   /************
    * Computed *
@@ -121,20 +120,27 @@ export default class SeamCarving extends Vue {
       return;
     }
     this.hasStopped = false;
+    // const numberOfAdditions = value - this.currentWidth;
     const numberOfRemovals = this.currentWidth - value;
-    if (numberOfRemovals > 0) {
-      await this.showSeams(numberOfRemovals);
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      const ctx = this.$refs.canvas.getContext(
-        "2d"
-      ) as CanvasRenderingContext2D;
-      ctx.putImageData(this.originalImageData!, 0, 0);
-      await this.removeSeams(numberOfRemovals);
-    } else if (numberOfRemovals === 0) {
-      // do nothing
-    } else {
-      await this.addSeams(-numberOfRemovals);
-    }
+    // if (numberOfAdditions < 0) {
+    // await this.showSeams(numberOfRemovals);
+    // await new Promise(resolve => setTimeout(resolve, 1000));
+    // const ctx = this.$refs.canvas.getContext(
+    //   "2d"
+    // ) as CanvasRenderingContext2D;
+    // ctx.putImageData(this.originalImageData!, 0, 0);
+    // await this.removeSeams(numberOfRemovals);
+    // await this.removeSmallSeams(numberOfRemovals);
+    await this.showSmallSeams(numberOfRemovals);
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    await this.reset();
+    await this.removeSmallSeams(numberOfRemovals);
+    // await this.showSeams(numberOfRemovals);
+    // } else if (numberOfAdditions === 0) {
+    //   // do nothing
+    // } else {
+    //   await this.addSeams(numberOfAdditions);
+    // }
   }
 
   /************
@@ -145,9 +151,7 @@ export default class SeamCarving extends Vue {
       this.$refs.image.addEventListener("load", resolve);
     });
     await this.onImageChanged();
-    // for (let i = 0; i < 400; i++) {
-    //   await this.removeSeam();
-    // }
+    this.wantedWidth -= 135;
   }
 
   /************
@@ -184,12 +188,59 @@ export default class SeamCarving extends Vue {
     this.originalImageData = ctx.getImageData(0, 0, width, height);
   }
 
+  private async applyAction(
+    action:
+      | "REMOVE_SEAMS"
+      | "ADD_SEAMS"
+      | "SHOW_SEAMS"
+      | "SHOW_SMALL_SEAMS"
+      | "REMOVE_SMALL_SEAMS",
+    numberOfSeams: number
+  ) {
+    return new Promise(resolve => {
+      const width = this.$refs.canvas.width;
+      const height = this.$refs.canvas.height;
+      const ctx = this.$refs.canvas.getContext(
+        "2d"
+      ) as CanvasRenderingContext2D;
+      const imageData = ctx.getImageData(0, 0, width, height);
+
+      this.worker.onmessage = (event: any) => {
+        if (this.shouldStop) {
+          this.hasStopped = true;
+          return;
+        }
+        const action = event.data.action;
+        const data = event.data.data;
+        const buffer = data.buffer;
+
+        const newImageData = new ImageData(
+          new Uint8ClampedArray(buffer),
+          data.width,
+          data.height
+        );
+        this.$refs.canvas.width = data.width;
+        this.currentWidth = data.width;
+        ctx.putImageData(newImageData, 0, 0);
+        resolve();
+      };
+
+      this.worker.postMessage(
+        {
+          action,
+          data: {
+            width,
+            height,
+            buffer: imageData.data.buffer,
+            numberOfSeams: Math.abs(numberOfSeams)
+          }
+        },
+        [imageData.data.buffer]
+      );
+    });
+  }
+
   private async reset() {
-    if (this.shouldStop) {
-      return;
-    }
-    this.operationInProgress = true;
-    this.shouldStop = true;
     const canvas = this.$refs.canvas;
     const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
     if (this.originalImageData !== null) {
@@ -203,18 +254,9 @@ export default class SeamCarving extends Vue {
       this.currentHeight = originalHeight;
       ctx.putImageData(this.originalImageData, 0, 0);
     }
-    // while (!this.hasStopped) {
-    //   await new Promise(resolve => requestAnimationFrame(resolve));
-    // }
-    // this.shouldStop = false;
-    // this.operationInProgress = false;
   }
 
   private async addSeams(numberOfSeams: number) {
-    if (this.operationInProgress) {
-      return;
-    }
-    this.operationInProgress = true;
     return new Promise(resolve => {
       const width = this.$refs.canvas.width;
       const height = this.$refs.canvas.height;
@@ -241,7 +283,6 @@ export default class SeamCarving extends Vue {
         this.$refs.canvas.width = newWidth;
         this.currentWidth = newWidth;
         ctx.putImageData(newImageData, 0, 0);
-        this.operationInProgress = false;
         resolve();
       };
 
@@ -261,10 +302,6 @@ export default class SeamCarving extends Vue {
   }
 
   private async removeSeams(numberOfSeams: number) {
-    if (this.operationInProgress) {
-      return;
-    }
-    this.operationInProgress = true;
     return new Promise(resolve => {
       const width = this.$refs.canvas.width;
       const height = this.$refs.canvas.height;
@@ -291,7 +328,6 @@ export default class SeamCarving extends Vue {
         this.$refs.canvas.width = newWidth;
         this.currentWidth = newWidth;
         ctx.putImageData(newImageData, 0, 0);
-        this.operationInProgress = false;
         resolve();
       };
 
@@ -310,11 +346,57 @@ export default class SeamCarving extends Vue {
     });
   }
 
+  private async removeSmallSeams(numberOfSeams: number) {
+    numberOfSeams = Math.abs(numberOfSeams);
+    // this.applyAction("REMOVE_SMALL_SEAMS", numberOfSeams);
+    return new Promise(resolve => {
+      const width = this.$refs.canvas.width;
+      const height = this.$refs.canvas.height;
+      const ctx = this.$refs.canvas.getContext(
+        "2d"
+      ) as CanvasRenderingContext2D;
+      const imageData = ctx.getImageData(0, 0, width, height);
+
+      this.worker.onmessage = (event: any) => {
+        if (this.shouldStop) {
+          this.hasStopped = true;
+          return;
+        }
+        const action = event.data.action;
+        const data = event.data.data;
+        const buffer = data.buffer;
+
+        console.log(this.currentWidth);
+        console.log(numberOfSeams);
+        console.log(data);
+
+        const newImageData = new ImageData(
+          new Uint8ClampedArray(buffer),
+          data.width,
+          data.height
+        );
+        this.$refs.canvas.width = data.width;
+        this.currentWidth = data.width;
+        ctx.putImageData(newImageData, 0, 0);
+        resolve();
+      };
+
+      this.worker.postMessage(
+        {
+          action: "REMOVE_SMALL_SEAMS",
+          data: {
+            width,
+            height,
+            buffer: imageData.data.buffer,
+            numberOfSeams
+          }
+        },
+        [imageData.data.buffer]
+      );
+    });
+  }
+
   private async showSeams(numberOfSeams: number) {
-    if (this.operationInProgress) {
-      return;
-    }
-    this.operationInProgress = true;
     return new Promise(resolve => {
       const width = this.$refs.canvas.width;
       const height = this.$refs.canvas.height;
@@ -341,7 +423,6 @@ export default class SeamCarving extends Vue {
         this.$refs.canvas.width = newWidth;
         this.currentWidth = newWidth;
         ctx.putImageData(newImageData, 0, 0);
-        this.operationInProgress = false;
         resolve();
       };
 
@@ -358,6 +439,56 @@ export default class SeamCarving extends Vue {
         [imageData.data.buffer]
       );
     });
+  }
+  private async showSmallSeams(numberOfSeams: number) {
+    this.applyAction("SHOW_SMALL_SEAMS", numberOfSeams);
+    // if (this.operationInProgress) {
+    //   return;
+    // }
+    // this.operationInProgress = true;
+    // return new Promise(resolve => {
+    //   const width = this.$refs.canvas.width;
+    //   const height = this.$refs.canvas.height;
+    //   const newWidth = width;
+    //   const ctx = this.$refs.canvas.getContext(
+    //     "2d"
+    //   ) as CanvasRenderingContext2D;
+    //   const imageData = ctx.getImageData(0, 0, width, height);
+
+    //   this.worker.onmessage = (event: any) => {
+    //     if (this.shouldStop) {
+    //       this.hasStopped = true;
+    //       return;
+    //     }
+    //     const action = event.data.action;
+    //     const data = event.data.data;
+    //     const buffer = data.buffer;
+
+    //     const newImageData = new ImageData(
+    //       new Uint8ClampedArray(buffer),
+    //       newWidth,
+    //       height
+    //     );
+    //     this.$refs.canvas.width = newWidth;
+    //     this.currentWidth = newWidth;
+    //     ctx.putImageData(newImageData, 0, 0);
+    //     this.operationInProgress = false;
+    //     resolve();
+    //   };
+
+    //   this.worker.postMessage(
+    //     {
+    //       action: "SHOW_SMALL_SEAMS",
+    //       data: {
+    //         width,
+    //         height,
+    //         buffer: imageData.data.buffer,
+    //         numberOfSeams
+    //       }
+    //     },
+    //     [imageData.data.buffer]
+    //   );
+    // });
   }
   /********
    * Refs *

@@ -6,13 +6,15 @@ import { pixelAt } from "../util";
  * @param seam - the minimum energy seam at which new pixels can be inserted
  * @return the image data with the new pixels inserted
  */
-export default function addSeam(imageData: ImageData, seam: Uint32Array) {
+export default function addSeams(imageData: ImageData, seams: Uint32Array[]) {
   const { width, height } = imageData;
-  const newImageData = new Uint8ClampedArray((width + 1) * height * 4);
+  const newImageData = new Uint8ClampedArray(
+    (width + seams.length) * height * 4
+  );
   let newImageDataIndex = 0;
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
-      if (x === seam[y]) {
+      if (seams.find(seam => seam[y] === x)) {
         const leftPixel = pixelAt(imageData, Math.max(x - 1, 0), y);
         const currentPixel = pixelAt(imageData, x, y);
         const rightPixel = pixelAt(imageData, Math.min(x, width - 1), y);
@@ -38,5 +40,5 @@ export default function addSeam(imageData: ImageData, seam: Uint32Array) {
       }
     }
   }
-  return new ImageData(newImageData, width + 1, height);
+  return new ImageData(newImageData, width + seams.length, height);
 }

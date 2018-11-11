@@ -47,3 +47,19 @@ export default function computeEnergyMatrix(imageData: ImageData) {
   }
   return { energyMatrix, width, height };
 }
+
+export function computeSmallEnergyMatrix(imageData: ImageData, factor: number) {
+  const { width, height } = imageData;
+  const newWidth = Math.floor(width / factor);
+  const newHeight = Math.floor(height / factor);
+  const energyMatrix = computeEnergyMatrix(imageData);
+  const newEnergyMatrix = new Float32Array(newWidth * newHeight).fill(0);
+  for (let x = 0; x < width; x++) {
+    for (let y = 0; y < height; y++) {
+      newEnergyMatrix[
+        Math.floor(y / factor) * newWidth + Math.floor(x / factor)
+      ] += energyMatrix.energyMatrix[y * width + x];
+    }
+  }
+  return { energyMatrix: newEnergyMatrix, width: newWidth, height: newHeight };
+}
