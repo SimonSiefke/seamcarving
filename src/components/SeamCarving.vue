@@ -26,9 +26,7 @@ export default class SeamCarving extends Vue {
    * Data *
    ********/
   // @ts-ignore
-  worker1 = new Worker("./worker.ts", { type: "module" });
-  // @ts-ignore
-  worker2 = new Worker("./worker.ts", { type: "module" });
+  worker = new Worker("./worker.ts", { type: "module" });
   private currentWidth_ = 100;
   private currentHeight_ = 100;
   private wantedWidth = 100;
@@ -58,7 +56,6 @@ export default class SeamCarving extends Vue {
 
   get currentWidth() {
     return this.currentWidth_;
-    // return this.$refs.canvas ? this.$refs.canvas.width : -1;
   }
 
   set currentWidth(value: number) {
@@ -68,7 +65,6 @@ export default class SeamCarving extends Vue {
 
   get currentHeight() {
     return this.currentHeight_;
-    // return this.$refs.canvas ? this.$refs.canvas.height : -1;
   }
 
   set currentHeight(value: number) {
@@ -134,8 +130,8 @@ export default class SeamCarving extends Vue {
    ************/
   async mounted() {
     this.gui = new dat.GUI();
-    this.gui.add(this, "wantedWidth", 10, this.maxWidth, 5).name("width");
-    this.gui.add(this, "wantedHeight", 10, this.maxHeight, 5).name("height");
+    this.gui.add(this, "wantedWidth", 10, this.maxWidth, 1).name("width");
+    this.gui.add(this, "wantedHeight", 10, this.maxHeight, 1).name("height");
     this.gui.add(this, "reset");
 
     const imageLoaded = new Promise(resolve => {
@@ -233,8 +229,13 @@ export default class SeamCarving extends Vue {
         "2d"
       ) as CanvasRenderingContext2D;
       const imageData = ctx.getImageData(0, 0, width, height);
+      // const imageData = {
+      //   width: this.originalImageData!.width,
+      //   height: this.originalImageData!.height,
+      //   data: this.originalImageData!.data.slice()
+      // };
 
-      this.worker1.onmessage = (event: any) => {
+      this.worker.onmessage = (event: any) => {
         resolve(() => {
           const action = event.data.action;
           const data = event.data.data;
@@ -246,11 +247,12 @@ export default class SeamCarving extends Vue {
             data.height
           );
           this.currentWidth = data.width;
+          this.currentHeight = data.height;
           ctx.putImageData(newImageData, 0, 0);
         });
       };
 
-      this.worker1.postMessage(
+      this.worker.postMessage(
         {
           action: type,
           data: {
