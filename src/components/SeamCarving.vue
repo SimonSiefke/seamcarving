@@ -62,6 +62,17 @@
 
 <script lang="ts">
 import { Component, Prop, Vue, Watch } from "vue-property-decorator";
+type ActionType =
+  | "REMOVE_SEAMS"
+  | "ADD_SEAMS"
+  | "SHOW_SEAMS"
+  | "SHOW_SMALL_SEAMS"
+  | "REMOVE_SMALL_SEAMS";
+
+interface Action {
+  type: ActionType;
+  numberOfSeams: number;
+}
 
 @Component
 export default class SeamCarving extends Vue {
@@ -75,7 +86,7 @@ export default class SeamCarving extends Vue {
   private wantedWidth_ = 100;
   private wantedHeight_ = 100;
   private originalImageData: ImageData | null = null;
-  private queue = [];
+  private pendingActions: Action[] = [];
 
   /************
    * Computed *
@@ -136,9 +147,19 @@ export default class SeamCarving extends Vue {
     }
     const numberOfAdditions = value - this.originalImageData.width;
     if (numberOfAdditions > 0) {
-      this.addSeams(numberOfAdditions);
+      this.pendingActions.push({
+        type: "ADD_SEAMS",
+        numberOfSeams: numberOfAdditions
+      });
     } else if (numberOfAdditions < 0) {
-      this.removeSeams(numberOfAdditions);
+      this.pendingActions.push({
+        type: "REMOVE_SEAMS",
+        numberOfSeams: numberOfAdditions
+      });
+    }
+    while (this.pendingActions.length > 0) {
+      const action = this.pendingActions.pop() as Action;
+      this.applyAction(action);
     }
   }
 
@@ -185,15 +206,8 @@ export default class SeamCarving extends Vue {
     this.originalImageData = ctx.getImageData(0, 0, width, height);
   }
 
-  private async applyAction(
-    action:
-      | "REMOVE_SEAMS"
-      | "ADD_SEAMS"
-      | "SHOW_SEAMS"
-      | "SHOW_SMALL_SEAMS"
-      | "REMOVE_SMALL_SEAMS",
-    numberOfSeams: number
-  ) {
+  private async applyAction(action: Action) {
+    const { type, numberOfSeams } = action;
     return new Promise(resolve => {
       const width = this.currentWidth;
       const height = this.currentHeight;
@@ -219,7 +233,7 @@ export default class SeamCarving extends Vue {
 
       this.worker1.postMessage(
         {
-          action,
+          action: type,
           data: {
             width,
             height,
@@ -246,25 +260,6 @@ export default class SeamCarving extends Vue {
     }
   }
 
-  private async addSeams(numberOfSeams: number) {
-    this.applyAction("ADD_SEAMS", numberOfSeams);
-  }
-
-  private async removeSeams(numberOfSeams: number) {
-    this.applyAction("REMOVE_SEAMS", numberOfSeams);
-  }
-
-  private async removeSmallSeams(numberOfSeams: number) {
-    this.applyAction("REMOVE_SMALL_SEAMS", numberOfSeams);
-  }
-
-  private async showSeams(numberOfSeams: number) {
-    this.applyAction("SHOW_SEAMS", numberOfSeams);
-  }
-
-  private async showSmallSeams(numberOfSeams: number) {
-    this.applyAction("SHOW_SMALL_SEAMS", numberOfSeams);
-  }
   /********
    * Refs *
    ********/
