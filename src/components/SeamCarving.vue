@@ -1,67 +1,13 @@
 <template>
   <section>
-
-
-    <div class="left">
-      <img
-        ref="image"
-        src="@/assets/animal.png"
-        alt="">
-
-      <div class="item">
-        <label>Width</label>
-        <paper-range-slider
-          step="1"
-          :min="1"
-          :max="maxWidth"
-          :value-max="wantedWidth"
-          single-slider
-          @updateValues="wantedWidth=$event.target.valueMax" />
-      </div>
-
-      <div class="item">
-        <label>Height</label>
-        <paper-range-slider
-          step="1"
-          :min="1"
-          :max="maxHeight"
-          :value-max="wantedHeight"
-          single-slider
-          @updateValues="wantedHeight=$event.target.valueMax" />
-      </div>
-
-      <div class="buttons">
-        <div class="button-wrapper">
-          <button
-            id="upload">Upload</button>
-          <input
-            type="file"
-            accept="image/*"
-            @input="upload">
-        </div>
-        <div class="button-wrapper">
-          <button
-            id="reset"
-            type="reset"
-            @click="reset">Reset</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="right">
-      <canvas ref="canvas" />
-    </div>
-
-    <header>
-      <h1>Seam Carving</h1>
-      <div class="organic" />
-    </header>
-
+    <canvas ref="canvas" />
   </section>
 </template>
 
 <script lang="ts">
 import { Component, Prop, Vue, Watch } from "vue-property-decorator";
+import * as dat from "dat.gui";
+
 type ActionType =
   | "REMOVE_SEAMS"
   | "ADD_SEAMS"
@@ -85,11 +31,13 @@ export default class SeamCarving extends Vue {
   worker2 = new Worker("./worker.ts", { type: "module" });
   private currentWidth_ = 100;
   private currentHeight_ = 100;
-  private wantedWidth_ = 100;
-  private wantedHeight_ = 100;
+  private wantedWidth = 100;
+  private wantedHeight = 100;
   private originalImageData: ImageData | null = null;
   private currentAction: Action | null = null;
   private executionInterrupted = false;
+  private gui: any;
+  private image = new Image();
 
   /************
    * Computed *
@@ -128,22 +76,6 @@ export default class SeamCarving extends Vue {
     this.$refs.canvas && (this.$refs.canvas.height = value);
   }
 
-  get wantedWidth() {
-    return this.wantedWidth_;
-  }
-
-  set wantedWidth(value: number) {
-    this.wantedWidth_ = Math.round(value);
-  }
-
-  get wantedHeight() {
-    return this.wantedHeight_;
-  }
-
-  set wantedHeight(value: number) {
-    this.wantedHeight_ = Math.round(value);
-  }
-
   /************
    * Watchers *
    ************/
@@ -163,10 +95,15 @@ export default class SeamCarving extends Vue {
       //   type: "REMOVE_SEAMS",
       //   numberOfSeams: numberOfAdditions
       // };
-      this.currentAction = {
-        type: "SHOW_SEAMS",
+      // this.currentAction = {
+      //   type: "SHOW_SEAMS",
+      //   numberOfSeams: numberOfAdditions
+      // };
+      const action: Action = {
+        type: "REMOVE_SEAMS",
         numberOfSeams: numberOfAdditions
       };
+      (await this.applyAction(action))();
     } else {
       this.reset();
     }
@@ -196,9 +133,20 @@ export default class SeamCarving extends Vue {
    * Mounted *
    ************/
   async mounted() {
-    await new Promise(resolve => {
-      this.$refs.image.addEventListener("load", resolve);
+    this.gui = new dat.GUI();
+    this.gui.add(this, "wantedWidth", 10, this.maxWidth, 5).name("width");
+    this.gui.add(this, "wantedHeight", 10, this.maxHeight, 5).name("height");
+    this.gui.add(this, "reset");
+
+    const imageLoaded = new Promise(resolve => {
+      this.image.addEventListener("load", () => {
+        this.image.setAttribute("width", `${this.image.naturalWidth}`);
+        this.image.setAttribute("height", `${this.image.naturalHeight}`);
+        resolve();
+      });
     });
+    this.image.setAttribute("src", "/assets/animal.png");
+    await imageLoaded;
     await this.onImageChanged();
     const randomPoint = () => Math.floor(Math.random() * 500) + 100;
     let point = randomPoint();
@@ -218,12 +166,36 @@ export default class SeamCarving extends Vue {
     // }
   }
 
+  /******************
+   * Before Destroy *
+   ******************/
+  beforeDestroy() {
+    this.gui.destroy();
+  }
+
   /************
    * Methods *
    ************/
+  private updateGUI() {
+    for (var i in this.gui.__controllers) {
+      const controller = this.gui.__controllers[i];
+      switch (controller.property) {
+        case "wantedWidth":
+          controller.__max = this.maxWidth;
+          break;
+        case "wantedHeight":
+          controller.__max = this.maxHeight;
+          break;
+        default:
+          break;
+      }
+      this.gui.__controllers[i].updateDisplay();
+    }
+  }
+
   private async upload(event: Event) {
     return new Promise(resolve => {
-      const image = this.$refs.image;
+      const image = this.image;
       const file = (event.target as any).files[0] as File;
       const url = URL.createObjectURL(file);
       image.addEventListener("load", () => {
@@ -240,7 +212,7 @@ export default class SeamCarving extends Vue {
   private onImageChanged() {
     const canvas = this.$refs.canvas;
     const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
-    const image = this.$refs.image;
+    const image = this.image;
     const width = image.naturalWidth;
     const height = image.naturalHeight;
     this.currentWidth = width;
@@ -249,6 +221,7 @@ export default class SeamCarving extends Vue {
     this.wantedHeight = height;
     ctx.drawImage(image, 0, 0);
     this.originalImageData = ctx.getImageData(0, 0, width, height);
+    this.updateGUI();
   }
 
   private async applyAction(action: Action) {
@@ -303,6 +276,7 @@ export default class SeamCarving extends Vue {
       this.wantedWidth = originalWidth;
       this.wantedHeight = originalHeight;
       ctx.putImageData(this.originalImageData, 0, 0);
+      this.updateGUI();
     }
   }
 
@@ -311,126 +285,21 @@ export default class SeamCarving extends Vue {
    ********/
   $refs!: {
     canvas: HTMLCanvasElement;
-    image: HTMLImageElement;
   };
 }
 </script>
 
 <style scoped lang="stylus">
-header
-  grid-column span 2
-  justify-self center !important
-  margin-top 6rem
-  position relative
-
-h1
-  font-size 2rem
-
 section
-  display grid
-  grid-template-columns 1fr 1fr
-
-  > *:nth-child(even)
-    justify-self start
-
-  > *:nth-child(odd)
-    justify-self end
-
-canvas, img
-  display block
-  height auto
-  max-height 50vh
-  max-width 100%
-
-button
-  background var(--theme-color)
-  border none
-  border-radius 0.2rem
-  box-shadow 0 2px 5px rgba(0, 0, 0, 0.2)
-  color white
-  padding 0.3rem 0.4rem
-
-.button-wrapper
-  &:hover button
-    box-shadow 0 3px 7px rgba(0, 0, 0, 0.2)
-
-  &:active button
-    box-shadow 0 2px 5px rgba(0, 0, 0, 0.2)
-
-paper-range-slider
-  --paper-range-slider-active-color var(--theme-color)
-  --paper-range-slider-knob-color var(--theme-color)
-
-label
-  align-self start
-  display block
-  margin 0
-  transform translate(1rem, 0.85rem)
-
-section .left
   align-items center
   display flex
-  flex-direction column
+  height 100vh
+  justify-content center
 
-.item
-  font-size 90%
-  height 2.5rem
-  max-width 200px
-  width 100%
-
-  &:nth-last-of-type(2)
-    margin-bottom 1rem
-
-.buttons
-  display flex
-
-.button-wrapper, button
-  cursor pointer
-
-.button-wrapper
-  display inline-block
-  overflow hidden
-  padding 0 2px 7px 2px
-  position relative
-
-  input[type=file]
-    cursor pointer
-    height 100%
-    left 0
-    opacity 0
-    position absolute
-    top 0
-
-#upload
-  margin-right 0.3rem
-
-#reset
-  margin-left 0.3rem
-
-.organic
-  animation-duration 20s
-  animation-iteration-count infinite
-  animation-name organic
-  border 3px solid var(--theme-color)
-  border-radius 41% 59% 41% 59% / 43% 45% 55% 57%
+canvas
+  align-self center
   display block
-  height 110%
-  left -15%
-  position absolute
-  top 0
-  width 130%
-  z-index -1
-
-@keyframes organic
-  0%
-    border-radius 41% 59% 41% 59% / 43% 45% 55% 57%
-
-  33%
-    border-radius 30% 70% 30% 70% / 32% 30% 70% 68%
-
-  66%
-    border-radius 70% 30% 70% 30% / 68% 70% 30% 32%
-
-  100%
-    border-radius 41% 59% 41% 59% / 43% 45% 55% 57%
+  height auto
+  max-height 70vh
+  max-width 100%
 </style>

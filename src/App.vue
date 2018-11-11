@@ -16,14 +16,7 @@ import SeamCarving from "@/components/SeamCarving.vue";
 export default class App extends Vue {}
 </script>
 <style lang="stylus">
-:root
-  --theme-color orange
-
-*::-moz-focus-inner
-  border none
-
 body
-  color var(--theme-color)
-  font-family 'Permanent Marker', cursive, 'Times New Roman', Times, serif
+  background black
   margin 0
 </style>
