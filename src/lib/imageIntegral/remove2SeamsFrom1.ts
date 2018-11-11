@@ -9,27 +9,23 @@ export default function removeNSeamsFrom1(
   seams: Uint32Array[],
   factor: number
 ) {
-  console.log(seams);
   const { width, height } = imageData;
   const newWidth = width - seams.length * factor;
   const newImageData = new Uint8ClampedArray(newWidth * height * 4);
   let newImageDataIndex = 0;
   for (let y = 0; y < height; y++) {
-    let ins = 0;
     for (let x = 0; x < width; x++) {
       if (
         !seams.find(
           seam => seam[Math.floor(y / factor)] === Math.floor(x / factor)
         )
       ) {
-        ins++;
         for (let i = 0; i < 4; i++) {
           const index = (y * width + x) * 4 + i;
           newImageData[newImageDataIndex++] = imageData.data[index];
         }
       }
     }
-    console.log(ins);
   }
   // return newImageData;
   return new ImageData(newImageData, newWidth, height);
