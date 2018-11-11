@@ -83,10 +83,13 @@ export default class SeamCarving extends Vue {
   worker1 = new Worker("./worker.ts", { type: "module" });
   // @ts-ignore
   worker2 = new Worker("./worker.ts", { type: "module" });
+  private currentWidth_ = 100;
+  private currentHeight_ = 100;
   private wantedWidth_ = 100;
   private wantedHeight_ = 100;
   private originalImageData: ImageData | null = null;
-  private pendingActions: Action[] = [];
+  private currentAction: Action | null = null;
+  private executionInterrupted = false;
 
   /************
    * Computed *
@@ -106,18 +109,22 @@ export default class SeamCarving extends Vue {
   }
 
   get currentWidth() {
-    return this.$refs.canvas ? this.$refs.canvas.width : -1;
+    return this.currentWidth_;
+    // return this.$refs.canvas ? this.$refs.canvas.width : -1;
   }
 
   set currentWidth(value: number) {
+    this.currentWidth_ = value;
     this.$refs.canvas && (this.$refs.canvas.width = value);
   }
 
   get currentHeight() {
-    return this.$refs.canvas ? this.$refs.canvas.height : -1;
+    return this.currentHeight_;
+    // return this.$refs.canvas ? this.$refs.canvas.height : -1;
   }
 
   set currentHeight(value: number) {
+    this.currentHeight_ = value;
     this.$refs.canvas && (this.$refs.canvas.height = value);
   }
 
@@ -147,19 +154,41 @@ export default class SeamCarving extends Vue {
     }
     const numberOfAdditions = value - this.originalImageData.width;
     if (numberOfAdditions > 0) {
-      this.pendingActions.push({
+      this.currentAction = {
         type: "ADD_SEAMS",
         numberOfSeams: numberOfAdditions
-      });
+      };
     } else if (numberOfAdditions < 0) {
-      this.pendingActions.push({
-        type: "REMOVE_SEAMS",
+      // this.currentAction = {
+      //   type: "REMOVE_SEAMS",
+      //   numberOfSeams: numberOfAdditions
+      // };
+      this.currentAction = {
+        type: "SHOW_SEAMS",
         numberOfSeams: numberOfAdditions
-      });
+      };
+    } else {
+      this.reset();
     }
-    while (this.pendingActions.length > 0) {
-      const action = this.pendingActions.pop() as Action;
-      this.applyAction(action);
+  }
+  @Watch("currentAction")
+  private async executePendingActions(newValue: Action, oldValue: Action) {
+    if (oldValue && newValue) {
+      this.executionInterrupted = true;
+      return;
+    }
+    if (newValue) {
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        this.executionInterrupted = false;
+        const applyResult = await this.applyAction(this
+          .currentAction as Action);
+        applyResult();
+        if (!this.executionInterrupted) {
+          this.currentAction = null;
+          break;
+        }
+      }
     }
   }
 
@@ -171,7 +200,22 @@ export default class SeamCarving extends Vue {
       this.$refs.image.addEventListener("load", resolve);
     });
     await this.onImageChanged();
-    this.wantedWidth += 135;
+    const randomPoint = () => Math.floor(Math.random() * 500) + 100;
+    let point = randomPoint();
+    let current = this.currentWidth;
+    // while (true) {
+    //   await new Promise(resolve => setTimeout(resolve, 100));
+    //   if (current > point) {
+    //     current--;
+    //   } else if (current < point) {
+    //     current++;
+    //   } else {
+    //     console.log("else");
+    //     point = randomPoint();
+    //   }
+    //   console.log(point, current);
+    //   this.wantedWidth = current;
+    // }
   }
 
   /************
@@ -183,6 +227,7 @@ export default class SeamCarving extends Vue {
       const file = (event.target as any).files[0] as File;
       const url = URL.createObjectURL(file);
       image.addEventListener("load", () => {
+        // console.log(image.naturalWidth);
         image.setAttribute("width", `${image.naturalWidth}`);
         image.setAttribute("height", `${image.naturalHeight}`);
         this.onImageChanged();
@@ -208,7 +253,7 @@ export default class SeamCarving extends Vue {
 
   private async applyAction(action: Action) {
     const { type, numberOfSeams } = action;
-    return new Promise(resolve => {
+    return new Promise<() => void>(resolve => {
       const width = this.currentWidth;
       const height = this.currentHeight;
       const ctx = this.$refs.canvas.getContext(
@@ -217,18 +262,19 @@ export default class SeamCarving extends Vue {
       const imageData = ctx.getImageData(0, 0, width, height);
 
       this.worker1.onmessage = (event: any) => {
-        const action = event.data.action;
-        const data = event.data.data;
-        const buffer = data.buffer;
+        resolve(() => {
+          const action = event.data.action;
+          const data = event.data.data;
+          const buffer = data.buffer;
 
-        const newImageData = new ImageData(
-          new Uint8ClampedArray(buffer),
-          data.width,
-          data.height
-        );
-        this.currentWidth = data.width;
-        ctx.putImageData(newImageData, 0, 0);
-        resolve();
+          const newImageData = new ImageData(
+            new Uint8ClampedArray(buffer),
+            data.width,
+            data.height
+          );
+          this.currentWidth = data.width;
+          ctx.putImageData(newImageData, 0, 0);
+        });
       };
 
       this.worker1.postMessage(

@@ -15,16 +15,16 @@ addEventListener("message", event => {
   const buffer = data.buffer;
   const { width, height, numberOfSeams } = data;
   const array = new Uint8ClampedArray(buffer);
-  console.time("compute full energy matrix");
+  // console.time("compute full energy matrix");
   const energyMatrix = computeEnergyMatrix({
     width,
     height,
     data: array
   });
   const cumulatedEnergyMatrix = computeCumulatedEnergyMatrix(energyMatrix);
-  console.timeEnd("compute full energy matrix");
+  // console.timeEnd("compute full energy matrix");
   const seams = computeSeams(cumulatedEnergyMatrix, numberOfSeams);
-  console.time("compute small energy matrix");
+  // console.time("compute small energy matrix");
   const smallEnergyMatrix = computeSmallEnergyMatrix(
     {
       width,
@@ -37,7 +37,7 @@ addEventListener("message", event => {
   const smallCumulatedEnergyMatrix = computeCumulatedEnergyMatrix(
     smallEnergyMatrix
   );
-  console.timeEnd("compute small energy matrix");
+  // console.timeEnd("compute small energy matrix");
 
   const smallSeams = computeSeams(
     smallCumulatedEnergyMatrix,
