@@ -15,10 +15,10 @@ export default function removeSeams(
   let newImageDataIndex = 0;
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
-      if (seams.find(seam => seam[y] === x)) {
+      if (!seams.find(seam => seam[y] === x)) {
         for (let i = 0; i < 4; i++) {
-          const imageDataIndex = (y * width + x) * 4 + i;
-          newImageData[newImageDataIndex++] = imageData.data[imageDataIndex];
+          const index = (y * width + x) * 4 + i;
+          newImageData[newImageDataIndex++] = imageData.data[index];
         }
       }
     }

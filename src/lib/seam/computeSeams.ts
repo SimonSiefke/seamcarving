@@ -44,20 +44,20 @@ export default function computeSeams(
         }
       }
       const energyTopLeft =
-        xLeftIndex < 0
+        xLeftIndex < 0 || occupied[yIndexTop + xLeftIndex]
           ? Infinity
           : cumulatedEnergyMatrix[yIndexTop + xLeftIndex];
       const energyTop = occupied[yIndexTop + currentX]
         ? Infinity
         : cumulatedEnergyMatrix[yIndexTop + currentX];
       let xRightIndex = currentX + 1;
-      for (; xRightIndex < width - 1; xRightIndex++) {
+      for (; xRightIndex < width; xRightIndex++) {
         if (!occupied[yIndexTop + xRightIndex]) {
           break;
         }
       }
       const energyTopRight =
-        xRightIndex > width - 1
+        xRightIndex > width - 1 || occupied[yIndexTop + xRightIndex]
           ? Infinity
           : cumulatedEnergyMatrix[yIndexTop + xRightIndex];
       const minEnergy = Math.min(energyTopLeft, energyTop, energyTopRight);

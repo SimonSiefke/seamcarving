@@ -91,7 +91,6 @@ function onShowSeams(
 ) {
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
-      let remove = false;
       if (seams.find(seam => seam[y] === x)) {
         const index = (y * width + x) * 4;
         data[index] = 255;

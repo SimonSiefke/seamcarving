@@ -124,8 +124,12 @@ export default class SeamCarving extends Vue {
     const numberOfRemovals = this.currentWidth - value;
     if (numberOfRemovals > 0) {
       await this.showSeams(numberOfRemovals);
-      // await new Promise(resolve => setTimeout(resolve, 1000));
-      // await this.removeSeams(numberOfRemovals);
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      const ctx = this.$refs.canvas.getContext(
+        "2d"
+      ) as CanvasRenderingContext2D;
+      ctx.putImageData(this.originalImageData!, 0, 0);
+      await this.removeSeams(numberOfRemovals);
     } else if (numberOfRemovals === 0) {
       // do nothing
     } else {
@@ -199,11 +203,11 @@ export default class SeamCarving extends Vue {
       this.currentHeight = originalHeight;
       ctx.putImageData(this.originalImageData, 0, 0);
     }
-    while (!this.hasStopped) {
-      await new Promise(resolve => requestAnimationFrame(resolve));
-    }
-    this.shouldStop = false;
-    this.operationInProgress = false;
+    // while (!this.hasStopped) {
+    //   await new Promise(resolve => requestAnimationFrame(resolve));
+    // }
+    // this.shouldStop = false;
+    // this.operationInProgress = false;
   }
 
   private async addSeams(numberOfSeams: number) {
