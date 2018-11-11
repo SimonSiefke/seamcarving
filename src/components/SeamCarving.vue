@@ -11,7 +11,7 @@
       <div class="item">
         <label>Width</label>
         <paper-range-slider
-          :step="1"
+          step="1"
           :min="1"
           :max="maxWidth"
           :value-max="wantedWidth"
@@ -22,7 +22,7 @@
       <div class="item">
         <label>Height</label>
         <paper-range-slider
-          :step="1"
+          step="1"
           :min="1"
           :max="maxHeight"
           :value-max="wantedHeight"
@@ -70,11 +70,10 @@ export default class SeamCarving extends Vue {
    ********/
   // @ts-ignore
   worker = new Worker("./worker.ts", { type: "module" });
-  // private cache: { [key: string]: Uint8ClampedArray } = {};
+  private wantedWidth_ = 100;
+  private wantedHeight_ = 100;
   private currentWidth = 100;
   private currentHeight = 100;
-  private wantedWidth = 100;
-  private wantedHeight = 100;
   private originalImageData: ImageData | null = null;
   private shouldStop = false;
   private hasStopped = true;
@@ -97,6 +96,22 @@ export default class SeamCarving extends Vue {
     return 0;
   }
 
+  get wantedWidth() {
+    return this.wantedWidth_;
+  }
+
+  set wantedWidth(value: number) {
+    this.wantedWidth_ = Math.round(value);
+  }
+
+  get wantedHeight() {
+    return this.wantedHeight_;
+  }
+
+  set wantedHeight(value: number) {
+    this.wantedHeight_ = Math.round(value);
+  }
+
   /************
    * Watchers *
    ************/
@@ -107,20 +122,14 @@ export default class SeamCarving extends Vue {
     }
     this.hasStopped = false;
     const numberOfRemovals = this.currentWidth - value;
-    const numberOfAdditions = -numberOfRemovals;
-    for (let i = 0; i < numberOfRemovals; i++) {
-      if (this.shouldStop) {
-        this.hasStopped = true;
-        return;
-      }
-      await this.removeSeam();
-    }
-    for (let i = 0; i < numberOfAdditions; i++) {
-      if (this.shouldStop) {
-        this.hasStopped = true;
-        return;
-      }
-      await this.addSeam();
+    if (numberOfRemovals > 0) {
+      await this.showSeams(numberOfRemovals);
+      // await new Promise(resolve => setTimeout(resolve, 1000));
+      // await this.removeSeams(numberOfRemovals);
+    } else if (numberOfRemovals === 0) {
+      // do nothing
+    } else {
+      await this.addSeams(-numberOfRemovals);
     }
   }
 
@@ -171,62 +180,6 @@ export default class SeamCarving extends Vue {
     this.originalImageData = ctx.getImageData(0, 0, width, height);
   }
 
-  private async addSeam() {
-    if (this.operationInProgress) {
-      return;
-    }
-    this.operationInProgress = true;
-    return new Promise(resolve => {
-      const width = this.$refs.canvas.width;
-      const height = this.$refs.canvas.height;
-
-      const newWidth = width + 1;
-
-      // if (this.cache[`w${width - 1}h${height}`]) {
-      //   // console.log("from cache 😏");
-      //   return this.cache[`w${width - 1}h${height}`];
-      // }
-      // console.log("not in cache 😠");
-      const ctx = this.$refs.canvas.getContext(
-        "2d"
-      ) as CanvasRenderingContext2D;
-      const imageData = ctx.getImageData(0, 0, width, height);
-
-      this.worker.onmessage = (event: any) => {
-        if (this.shouldStop) {
-          this.hasStopped = true;
-          return;
-        }
-        const action = event.data.action;
-        const data = event.data.data;
-        const buffer = data.buffer;
-
-        const newImageData = new ImageData(
-          new Uint8ClampedArray(buffer),
-          newWidth,
-          height
-        );
-        this.$refs.canvas.width = newWidth;
-        this.currentWidth = newWidth;
-        ctx.putImageData(newImageData, 0, 0);
-        this.operationInProgress = false;
-        resolve();
-      };
-
-      this.worker.postMessage(
-        {
-          action: "ADD_SEAM",
-          data: {
-            width,
-            height,
-            buffer: imageData.data.buffer
-          }
-        },
-        [imageData.data.buffer]
-      );
-    });
-  }
-
   private async reset() {
     if (this.shouldStop) {
       return;
@@ -253,7 +206,7 @@ export default class SeamCarving extends Vue {
     this.operationInProgress = false;
   }
 
-  private async removeSeam() {
+  private async addSeams(numberOfSeams: number) {
     if (this.operationInProgress) {
       return;
     }
@@ -261,13 +214,7 @@ export default class SeamCarving extends Vue {
     return new Promise(resolve => {
       const width = this.$refs.canvas.width;
       const height = this.$refs.canvas.height;
-      const newWidth = width - 1;
-
-      // if (this.cache[`w${width - 1}h${height}`]) {
-      //   // console.log("from cache 😏");
-      //   return this.cache[`w${width - 1}h${height}`];
-      // }
-      // console.log("not in cache 😠");
+      const newWidth = width + numberOfSeams;
       const ctx = this.$refs.canvas.getContext(
         "2d"
       ) as CanvasRenderingContext2D;
@@ -289,7 +236,6 @@ export default class SeamCarving extends Vue {
         );
         this.$refs.canvas.width = newWidth;
         this.currentWidth = newWidth;
-        // this.cache[`w${width - 1}h${height}`] = newImageData.data;
         ctx.putImageData(newImageData, 0, 0);
         this.operationInProgress = false;
         resolve();
@@ -297,11 +243,12 @@ export default class SeamCarving extends Vue {
 
       this.worker.postMessage(
         {
-          action: "REMOVE_SEAM",
+          action: "ADD_SEAMS",
           data: {
             width,
             height,
-            buffer: imageData.data.buffer
+            buffer: imageData.data.buffer,
+            numberOfSeams
           }
         },
         [imageData.data.buffer]
@@ -309,44 +256,99 @@ export default class SeamCarving extends Vue {
     });
   }
 
-  private async seamCarve() {
+  private async removeSeams(numberOfSeams: number) {
+    if (this.operationInProgress) {
+      return;
+    }
+    this.operationInProgress = true;
     return new Promise(resolve => {
       const width = this.$refs.canvas.width;
       const height = this.$refs.canvas.height;
+      const newWidth = width - numberOfSeams;
       const ctx = this.$refs.canvas.getContext(
         "2d"
       ) as CanvasRenderingContext2D;
       const imageData = ctx.getImageData(0, 0, width, height);
 
       this.worker.onmessage = (event: any) => {
+        if (this.shouldStop) {
+          this.hasStopped = true;
+          return;
+        }
         const action = event.data.action;
         const data = event.data.data;
         const buffer = data.buffer;
-        const cumulatedEnergyMatrix = new Float32Array(buffer);
-        let max = -Infinity;
-        for (let i = 0; i < cumulatedEnergyMatrix.length; i++) {
-          max = Math.max(max, cumulatedEnergyMatrix[i]);
-        }
-        const visibleEnergyMatrix = new Uint8ClampedArray(
-          Array.from(cumulatedEnergyMatrix)
-            .map(x => Math.round((x / max) * 255))
-            .flatMap(x => [x, x, x, 255])
-        );
 
-        ctx.putImageData(
-          new ImageData(visibleEnergyMatrix, width, height),
-          0,
-          0
+        const newImageData = new ImageData(
+          new Uint8ClampedArray(buffer),
+          newWidth,
+          height
         );
+        this.$refs.canvas.width = newWidth;
+        this.currentWidth = newWidth;
+        ctx.putImageData(newImageData, 0, 0);
+        this.operationInProgress = false;
         resolve();
       };
+
       this.worker.postMessage(
         {
-          action: "COMPUTE_CUMULATED_ENERGY_MATRIX",
+          action: "REMOVE_SEAMS",
           data: {
             width,
             height,
-            buffer: imageData.data.buffer
+            buffer: imageData.data.buffer,
+            numberOfSeams
+          }
+        },
+        [imageData.data.buffer]
+      );
+    });
+  }
+
+  private async showSeams(numberOfSeams: number) {
+    if (this.operationInProgress) {
+      return;
+    }
+    this.operationInProgress = true;
+    return new Promise(resolve => {
+      const width = this.$refs.canvas.width;
+      const height = this.$refs.canvas.height;
+      const newWidth = width;
+      const ctx = this.$refs.canvas.getContext(
+        "2d"
+      ) as CanvasRenderingContext2D;
+      const imageData = ctx.getImageData(0, 0, width, height);
+
+      this.worker.onmessage = (event: any) => {
+        if (this.shouldStop) {
+          this.hasStopped = true;
+          return;
+        }
+        const action = event.data.action;
+        const data = event.data.data;
+        const buffer = data.buffer;
+
+        const newImageData = new ImageData(
+          new Uint8ClampedArray(buffer),
+          newWidth,
+          height
+        );
+        this.$refs.canvas.width = newWidth;
+        this.currentWidth = newWidth;
+        ctx.putImageData(newImageData, 0, 0);
+        this.operationInProgress = false;
+        resolve();
+      };
+
+      this.worker.postMessage(
+        {
+          action: "SHOW_SEAMS",
+          data: {
+            width,
+            height,
+            buffer: imageData.data.buffer,
+            numberOfSeams
           }
         },
         [imageData.data.buffer]
