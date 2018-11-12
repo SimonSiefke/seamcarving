@@ -4,7 +4,7 @@
 
 ## Demo
 
-[seamcarving.now.sh](seamcarving.now.sh) 👈
+[https://seamcarving.now.sh](https://seamcarving.now.sh) 👈
 
 ## Quickstart 🚀
 
