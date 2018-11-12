@@ -22,7 +22,7 @@ export default class SeamCarving extends Vue {
   private currentWidth_ = 100; // the width of the transformed image
   private executionInterrupted = false; // whether the execution of the current action was interrupted by another action (used to apply only the latest user action instead of queueing them up)
   private image = new Image(); // the image for which to apply the transformations
-  private rotated = true; // vertical (default) or horizontal mode
+  private rotated_ = true; // vertical (default) or horizontal mode
   private gui: any; // framework for the control box
   private originalImageData: ImageData | null = null; // the data or the image without any transformations applied
   private wantedHeight = 100; // the height specified by the user
@@ -75,7 +75,36 @@ export default class SeamCarving extends Vue {
     ) {
       return;
     }
+    await this.setRotation(false);
     const numberOfAdditions = value - this.originalImageData.width;
+    if (numberOfAdditions > 0) {
+      this.currentAction = {
+        type: "ADD_SEAMS",
+        payload: {
+          numberOfSeams: numberOfAdditions
+        }
+      };
+    } else if (numberOfAdditions < 0) {
+      this.currentAction = {
+        type: "REMOVE_SEAMS",
+        payload: {
+          numberOfSeams: numberOfAdditions
+        }
+      };
+    }
+  }
+
+  @Watch("wantedHeight")
+  private async adjustWantedHeight(value: number) {
+    if (
+      !this.originalImageData ||
+      value === this.originalImageData.height ||
+      value < 10
+    ) {
+      return;
+    }
+    await this.setRotation(true);
+    const numberOfAdditions = value - this.originalImageData.height;
     if (numberOfAdditions > 0) {
       this.currentAction = {
         type: "ADD_SEAMS",
@@ -151,9 +180,11 @@ export default class SeamCarving extends Vue {
       switch (controller.property) {
         case "wantedWidth":
           controller.__max = this.maxWidth;
+          // controller.setValue(this.wantedWidth);
           break;
         case "wantedHeight":
           controller.__max = this.maxHeight;
+          // controller.setValue(this.wantedHeight);
           break;
         default:
           break;
@@ -178,7 +209,7 @@ export default class SeamCarving extends Vue {
     });
   }
 
-  private onImageChanged() {
+  private async onImageChanged() {
     const canvas = this.$refs.canvas;
     const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
     const image = this.image;
@@ -192,19 +223,19 @@ export default class SeamCarving extends Vue {
     this.originalImageData = ctx.getImageData(0, 0, width, height);
     this.updateGUI();
     const buffer = this.originalImageData.data.slice().buffer;
-    this.applyAction({
+    (await this.applyAction({
       type: "INITIALIZE",
       payload: {
         width,
         height,
         buffer
       }
-    });
+    }))();
   }
 
   private async applyAction(action: Action) {
     const { type, payload } = action;
-    const rotated = this.rotated;
+    const rotated = this.rotated_;
 
     return new Promise<() => void>(resolve => {
       const ctx = this.$refs.canvas.getContext(
@@ -216,23 +247,34 @@ export default class SeamCarving extends Vue {
           const action = event.data.action;
           const data = event.data.data;
           if (rotated) {
-            const width = data.width;
-            const height = data.height;
-            data.width = height;
-            data.height = width;
-            const array = new Uint8ClampedArray(data.buffer);
-            const newArray = rotateImageData({ data: array, width, height });
-            const newBuffer = newArray.data.buffer;
-            data.buffer = newBuffer;
+            if (data.width && data.height) {
+              const width = data.width;
+              const height = data.height;
+              data.width = height;
+              data.height = width;
+              if (data.buffer) {
+                const array = new Uint8ClampedArray(data.buffer);
+                const newArray = rotateImageData({
+                  data: array,
+                  width,
+                  height
+                });
+                const newBuffer = newArray.data.buffer;
+                data.buffer = newBuffer;
+              }
+            }
           }
-          const newImageData = new ImageData(
-            new Uint8ClampedArray(data.buffer),
-            data.width,
-            data.height
-          );
-          this.currentWidth = data.width;
-          this.currentHeight = data.height;
-          ctx.putImageData(newImageData, 0, 0);
+
+          if (data.width && data.height && data.buffer) {
+            const newImageData = new ImageData(
+              new Uint8ClampedArray(data.buffer),
+              data.width,
+              data.height
+            );
+            this.currentWidth = data.width;
+            this.currentHeight = data.height;
+            ctx.putImageData(newImageData, 0, 0);
+          }
         });
       };
 
@@ -275,6 +317,28 @@ export default class SeamCarving extends Vue {
       this.wantedHeight = originalHeight;
       ctx.putImageData(this.originalImageData, 0, 0);
       this.updateGUI();
+    }
+  }
+
+  private async setRotation(value: boolean) {
+    if (this.originalImageData && value !== this.rotated_) {
+      this.rotated_ = value;
+      if (value) {
+        this.wantedWidth = this.originalImageData.width;
+      } else {
+        this.wantedHeight = this.originalImageData.height;
+      }
+      this.updateGUI();
+      const buffer = this.originalImageData.data.slice().buffer;
+      const { width, height } = this.originalImageData;
+      (await this.applyAction({
+        type: "INITIALIZE",
+        payload: {
+          width,
+          height,
+          buffer
+        }
+      }))();
     }
   }
 

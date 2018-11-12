@@ -27,6 +27,11 @@ async function onInitialize(_imageData: ImageData) {
     data
   });
   cumulatedEnergyMatrix = computeCumulatedEnergyMatrix(energyMatrix);
+  // @ts-ignore
+  self.postMessage({
+    action: "INITIALIZE",
+    data: {}
+  });
 }
 
 addEventListener("message", async event => {
@@ -92,7 +97,6 @@ function onRemoveSeams(
   { width, height, data }: ImageData,
   seams: Uint32Array[]
 ) {
-  console.log(seams);
   const newImageData = removeSeams({ data, width, height }, seams);
 
   self.postMessage(
