@@ -205,7 +205,6 @@ export default class SeamCarving extends Vue {
   private async applyAction(action: Action) {
     const { type, payload } = action;
     const rotated = this.rotated;
-    console.log(action);
 
     return new Promise<() => void>(resolve => {
       const ctx = this.$refs.canvas.getContext(
@@ -226,7 +225,6 @@ export default class SeamCarving extends Vue {
             const newBuffer = newArray.data.buffer;
             data.buffer = newBuffer;
           }
-          console.log(data);
           const newImageData = new ImageData(
             new Uint8ClampedArray(data.buffer),
             data.width,
@@ -255,7 +253,6 @@ export default class SeamCarving extends Vue {
         }
       }
 
-      console.log(payload);
       this.worker.postMessage(
         {
           action: type,
