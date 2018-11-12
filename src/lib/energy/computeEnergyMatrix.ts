@@ -1,5 +1,11 @@
 import { pixelAt, Pixel } from "../util";
 
+export interface EnergyMatrix {
+  width: number;
+  height: number;
+  energyMatrix: Float32Array;
+}
+
 /**
  * Computes the difference between two pixels.
  * @param firstPixel - the first pixel
@@ -36,7 +42,9 @@ function energyAt(imageData: ImageData, x: number, y: number) {
  * @param imageData - the image data
  * @return the energy matrix
  */
-export default function computeEnergyMatrix(imageData: ImageData) {
+export default function computeEnergyMatrix(
+  imageData: ImageData
+): EnergyMatrix {
   const { width, height } = imageData;
   const energyMatrix = new Float32Array(width * height);
   for (let y = 0; y < height; y++) {
@@ -48,7 +56,10 @@ export default function computeEnergyMatrix(imageData: ImageData) {
   return { energyMatrix, width, height };
 }
 
-export function computeSmallEnergyMatrix(imageData: ImageData, factor: number) {
+export function computeSmallEnergyMatrix(
+  imageData: ImageData,
+  factor: number
+): EnergyMatrix {
   const { width, height } = imageData;
   const newWidth = Math.floor(width / factor);
   const newHeight = Math.floor(height / factor);

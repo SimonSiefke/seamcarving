@@ -80,7 +80,7 @@ export default class SeamCarving extends Vue {
     if (!this.originalImageData || value === this.originalImageData.width) {
       return;
     }
-    const numberOfAdditions = value - this.currentWidth;
+    const numberOfAdditions = value - this.originalImageData.width;
     if (numberOfAdditions > 0) {
       this.currentAction = {
         type: "ADD_SEAMS",
@@ -100,8 +100,6 @@ export default class SeamCarving extends Vue {
         numberOfSeams: numberOfAdditions
       };
       (await this.applyAction(action))();
-    } else {
-      this.reset();
     }
   }
   @Watch("currentAction")
@@ -223,12 +221,16 @@ export default class SeamCarving extends Vue {
   private async applyAction(action: Action) {
     const { type, numberOfSeams } = action;
     return new Promise<() => void>(resolve => {
-      const width = this.currentWidth;
-      const height = this.currentHeight;
+      const width = this.originalImageData!.width;
+      const height = this.originalImageData!.height;
       const ctx = this.$refs.canvas.getContext(
         "2d"
       ) as CanvasRenderingContext2D;
-      const imageData = ctx.getImageData(0, 0, width, height);
+      const imageData = {
+        width: this.originalImageData!.width,
+        height: this.originalImageData!.height,
+        data: this.originalImageData!.data.slice()
+      };
 
       this.worker.onmessage = (event: any) => {
         resolve(() => {

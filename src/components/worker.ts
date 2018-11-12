@@ -1,7 +1,10 @@
 import computeEnergyMatrix, {
-  computeSmallEnergyMatrix
+  computeSmallEnergyMatrix,
+  EnergyMatrix
 } from "@/lib/energy/computeEnergyMatrix";
-import computeCumulatedEnergyMatrix from "@/lib/energy/computeCumulatedEnergyMatrix";
+import computeCumulatedEnergyMatrix, {
+  CumulatedEnergyMatrix
+} from "@/lib/energy/computeCumulatedEnergyMatrix";
 import computeSeams from "@/lib/seam/computeSeams";
 import removeSeams from "@/lib/seam/removeSeams";
 import addSeams from "@/lib/seam/addSeams";
@@ -9,47 +12,57 @@ import removeNSeamsFrom1 from "@/lib/imageIntegral/remove2SeamsFrom1";
 
 const factor = 4;
 
+let cumulatedEnergyMatrix: CumulatedEnergyMatrix;
+let energyMatrix: EnergyMatrix;
+let smallEnergyMatrix: EnergyMatrix;
+let smallCumulatedEnergyMatrix: CumulatedEnergyMatrix;
+
+/**
+ * Computes and assigns the energy matrix and the cumulated energy matrix for the given image data. This must only be done once for every image.
+ * @param imageData - the image data
+ */
+function onInitialize(imageData: ImageData) {
+  const { width, height, data } = imageData;
+  energyMatrix = computeEnergyMatrix({
+    width,
+    height,
+    data
+  });
+  cumulatedEnergyMatrix = computeCumulatedEnergyMatrix(energyMatrix);
+  smallEnergyMatrix = computeSmallEnergyMatrix(
+    {
+      width,
+      height,
+      data
+    },
+    factor
+  );
+
+  smallCumulatedEnergyMatrix = computeCumulatedEnergyMatrix(smallEnergyMatrix);
+}
+
 addEventListener("message", event => {
   const action = event.data.action;
   const data = event.data.data;
   const buffer = data.buffer;
   const { width, height, numberOfSeams } = data;
   const array = new Uint8ClampedArray(buffer);
-  // console.time("compute full energy matrix");
-  const energyMatrix = computeEnergyMatrix({
-    width,
-    height,
-    data: array
-  });
-  const cumulatedEnergyMatrix = computeCumulatedEnergyMatrix(energyMatrix);
-  // console.timeEnd("compute full energy matrix");
+  onInitialize({ width, height, data: array });
+
   const seams = computeSeams(cumulatedEnergyMatrix, numberOfSeams);
-  // console.time("compute small energy matrix");
-  const smallEnergyMatrix = computeSmallEnergyMatrix(
-    {
-      width,
-      height,
-      data: array
-    },
-    factor
-  );
-
-  const smallCumulatedEnergyMatrix = computeCumulatedEnergyMatrix(
-    smallEnergyMatrix
-  );
-  // console.timeEnd("compute small energy matrix");
-
   const smallSeams = computeSeams(
     smallCumulatedEnergyMatrix,
     Math.floor(numberOfSeams / factor)
   );
 
   switch (action) {
+    case "INITIALIZE":
+      onInitialize({ width, height, data: array });
     case "REMOVE_SEAMS":
       onRemoveSeams({ width, height, data: array }, seams);
       break;
     case "REMOVE_SMALL_SEAMS":
-      onRemove2SeamsFrom1({ width, height, data: array }, smallSeams);
+      onRemoveNSeamsFrom1({ width, height, data: array }, smallSeams);
       break;
     case "ADD_SEAMS":
       onAddSeams({ width, height, data: array }, seams);
@@ -65,6 +78,11 @@ addEventListener("message", event => {
   }
 });
 
+/**
+ * Computes an image data object with the given seams removed.
+ * @param param0
+ * @param seams - the seams to remove
+ */
 function onRemoveSeams(
   {
     width,
@@ -89,6 +107,11 @@ function onRemoveSeams(
   );
 }
 
+/**
+ * Computes an image data object with the given seams added.
+ * @param param0
+ * @param seams - the seams to add
+ */
 function onAddSeams(
   {
     width,
@@ -113,6 +136,11 @@ function onAddSeams(
   );
 }
 
+/**
+ * Computes an image data object that visualizes the seams as red pixels.
+ * @param param0
+ * @param seams
+ */
 function onShowSeams(
   {
     width,
@@ -146,6 +174,11 @@ function onShowSeams(
   );
 }
 
+/**
+ * Computes an image data object that visualizes the seams as red pixels.
+ * @param param0
+ * @param smallSeams
+ */
 function onShowSmallSeams(
   {
     width,
@@ -183,7 +216,12 @@ function onShowSmallSeams(
   );
 }
 
-function onRemove2SeamsFrom1(
+/**
+ * Computes an image data object width n seams are removed for each given seam.
+ * @param param0
+ * @param seams - the seams to remove
+ */
+function onRemoveNSeamsFrom1(
   {
     width,
     height,
