@@ -15,7 +15,7 @@ export default class SeamCarving extends Vue {
    * Data *
    ********/
   // @ts-ignore
-  worker = new Worker("./worker.ts", { type: "module" });
+  worker = new Worker("./worker.ts", { type: "module" }); // the webworker that does the heavy lifting off the mainthread
   private currentAction: Action | null = null; // the action that is currently being performed (e.g. removing 136px)
   private currentHeight_ = 100; // the height of the transformed image
   private currentWidth_ = 100; // the width of the transformed image
