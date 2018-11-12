@@ -1,5 +1,4 @@
 import computeEnergyMatrix, {
-  computeSmallEnergyMatrix,
   EnergyMatrix
 } from "@/lib/energy/computeEnergyMatrix";
 import computeCumulatedEnergyMatrix, {
@@ -8,6 +7,7 @@ import computeCumulatedEnergyMatrix, {
 import computeSeams from "@/lib/seam/computeSeams";
 import removeSeams from "@/lib/seam/removeSeams";
 import addSeams from "@/lib/seam/addSeams";
+import { ActionType } from "./action";
 
 let cumulatedEnergyMatrix: CumulatedEnergyMatrix;
 let energyMatrix: EnergyMatrix;
@@ -33,10 +33,9 @@ addEventListener("message", async event => {
   if (initializationPromise) {
     await initializationPromise;
   }
-  const action = event.data.action;
+  const action = event.data.action as ActionType;
   const data = event.data.data;
   let seams!: Uint32Array[];
-  let smallSeams!: Uint32Array[];
   if (data.numberOfSeams) {
     const numberOfSeams = Math.abs(data.numberOfSeams);
     seams = computeSeams(cumulatedEnergyMatrix, numberOfSeams);
@@ -44,7 +43,6 @@ addEventListener("message", async event => {
 
   switch (action) {
     case "INITIALIZE":
-      console.log("initialize");
       const { width, height, buffer } = data;
       const array = new Uint8ClampedArray(buffer);
       initializationPromise = onInitialize({ width, height, data: array });

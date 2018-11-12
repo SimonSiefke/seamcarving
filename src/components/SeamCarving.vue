@@ -16,15 +16,16 @@ export default class SeamCarving extends Vue {
    ********/
   // @ts-ignore
   worker = new Worker("./worker.ts", { type: "module" });
-  private currentWidth_ = 100;
-  private currentHeight_ = 100;
-  private wantedWidth = 100;
-  private wantedHeight = 100;
-  private originalImageData: ImageData | null = null;
-  private currentAction: Action | null = null;
-  private executionInterrupted = false;
-  private gui: any;
-  private image = new Image();
+  private currentAction: Action | null = null; // the action that is currently being performed (e.g. removing 136px)
+  private currentHeight_ = 100; // the height of the transformed image
+  private currentWidth_ = 100; // the width of the transformed image
+  private executionInterrupted = false; // whether the execution of the current action was interrupted by another action (used to apply only the latest user action instead of queueing them up)
+  private image = new Image(); // the image for which to apply the transformations
+  private flipped = false; // vertical (default) or horizontal mode
+  private gui: any; // framework for the control box
+  private originalImageData: ImageData | null = null; // the data or the image without any transformations applied
+  private wantedHeight = 100; // the height specified by the user
+  private wantedWidth = 100; // the width specified by the user
 
   /************
    * Computed *
@@ -90,6 +91,7 @@ export default class SeamCarving extends Vue {
       };
     }
   }
+
   @Watch("currentAction")
   private async executePendingActions(newValue: Action, oldValue: Action) {
     if (oldValue && newValue) {
@@ -130,22 +132,6 @@ export default class SeamCarving extends Vue {
     this.image.setAttribute("src", "/assets/animal.png");
     await imageLoaded;
     await this.onImageChanged();
-    const randomPoint = () => Math.floor(Math.random() * 500) + 100;
-    let point = randomPoint();
-    let current = this.currentWidth;
-    // while (true) {
-    //   await new Promise(resolve => setTimeout(resolve, 100));
-    //   if (current > point) {
-    //     current--;
-    //   } else if (current < point) {
-    //     current++;
-    //   } else {
-    //     console.log("else");
-    //     point = randomPoint();
-    //   }
-    //   console.log(point, current);
-    //   this.wantedWidth = current;
-    // }
   }
 
   /******************
