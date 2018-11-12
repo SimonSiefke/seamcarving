@@ -9,4 +9,3 @@
 ```
 
 1. codesandbox
-1. vertical
