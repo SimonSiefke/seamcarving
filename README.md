@@ -9,8 +9,8 @@
 ## Quickstart 🚀
 
 ```bash
-git clone ... &&
-cd .. &&
+git clone https://github.com/SimonSiefke/seamcarving &&
+cd seamcarving &&
 npm install &&
 npm run dev
 ```
