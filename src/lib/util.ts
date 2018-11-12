@@ -42,20 +42,38 @@ export function pixelAt(imageData: ImageData, x: number, y: number) {
   return { r, g, b, a };
 }
 
+/**
+ * Computes a new image data object where width and height are flipped.
+ * @param imageData - the image data to rotate
+ */
 export function rotateImageData(imageData: ImageData) {
   const { width, height, data } = imageData;
   const newImageData = new Uint8ClampedArray(width * height * 4);
   for (let x = 0; x < width; x++) {
     for (let y = 0; y < height; y++) {
-      const oldIndex = y * width + x;
-      const newIndex = x * height + y;
-      newImageData[newIndex] = data[oldIndex];
+      for (let i = 0; i < 4; i++) {
+        const oldIndex = (y * width + x)*4+i;
+        const newIndex = (x * height + y)*4+i;
+        oldIndex;
+        newIndex;
+        newImageData[newIndex] = data[oldIndex];
+      }
     }
   }
-
   return {
     width: height,
     height: width,
     data: newImageData
   };
 }
+
+// Array.from(
+//   rotateImageData({
+//     width: 2,
+//     height: 1,
+//     // prettier-ignore
+//     data: new Uint8ClampedArray([
+//     1,2,3,4,   5,6,7,8
+//   ])
+//   }).data
+// ); //?

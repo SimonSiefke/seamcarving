@@ -16,8 +16,4 @@ export interface Action {
     data?: number;
     buffer?: ArrayBuffer | SharedArrayBuffer;
   };
-  /**
-   * which parameters can be shared with the webworker (e.g. shared arrays)
-   */
-  transferable?: any[];
 }

@@ -46,6 +46,7 @@ addEventListener("message", async event => {
       const { width, height, buffer } = data;
       const array = new Uint8ClampedArray(buffer);
       initializationPromise = onInitialize({ width, height, data: array });
+      break;
     case "REMOVE_SEAMS":
       onRemoveSeams(imageData, seams);
       break;
@@ -65,14 +66,7 @@ addEventListener("message", async event => {
  * @param param0
  * @param seams - the seams to add
  */
-function onAddSeams(
-  {
-    width,
-    height,
-    data
-  }: { width: number; height: number; data: Uint8ClampedArray },
-  seams: Uint32Array[]
-) {
+function onAddSeams({ width, height, data }: ImageData, seams: Uint32Array[]) {
   const newImageData = addSeams({ data, width, height }, seams);
 
   self.postMessage(
@@ -95,13 +89,10 @@ function onAddSeams(
  * @param seams - the seams to remove
  */
 function onRemoveSeams(
-  {
-    width,
-    height,
-    data
-  }: { width: number; height: number; data: Uint8ClampedArray },
+  { width, height, data }: ImageData,
   seams: Uint32Array[]
 ) {
+  console.log(seams);
   const newImageData = removeSeams({ data, width, height }, seams);
 
   self.postMessage(

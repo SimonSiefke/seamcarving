@@ -8,6 +8,7 @@
 import { Component, Prop, Vue, Watch } from "vue-property-decorator";
 import * as dat from "dat.gui";
 import { Action } from "./action";
+import { rotateImageData } from "@/lib/util";
 
 @Component
 export default class SeamCarving extends Vue {
@@ -21,7 +22,7 @@ export default class SeamCarving extends Vue {
   private currentWidth_ = 100; // the width of the transformed image
   private executionInterrupted = false; // whether the execution of the current action was interrupted by another action (used to apply only the latest user action instead of queueing them up)
   private image = new Image(); // the image for which to apply the transformations
-  private flipped = false; // vertical (default) or horizontal mode
+  private rotated = true; // vertical (default) or horizontal mode
   private gui: any; // framework for the control box
   private originalImageData: ImageData | null = null; // the data or the image without any transformations applied
   private wantedHeight = 100; // the height specified by the user
@@ -161,13 +162,13 @@ export default class SeamCarving extends Vue {
     }
   }
 
+  // TODO
   private async upload(event: Event) {
     return new Promise(resolve => {
       const image = this.image;
       const file = (event.target as any).files[0] as File;
       const url = URL.createObjectURL(file);
       image.addEventListener("load", () => {
-        // console.log(image.naturalWidth);
         image.setAttribute("width", `${image.naturalWidth}`);
         image.setAttribute("height", `${image.naturalHeight}`);
         this.onImageChanged();
@@ -197,13 +198,15 @@ export default class SeamCarving extends Vue {
         width,
         height,
         buffer
-      },
-      transferable: [buffer]
+      }
     });
   }
 
   private async applyAction(action: Action) {
-    const { type, payload, transferable } = action;
+    const { type, payload } = action;
+    const rotated = this.rotated;
+    console.log(action);
+
     return new Promise<() => void>(resolve => {
       const ctx = this.$refs.canvas.getContext(
         "2d"
@@ -213,9 +216,19 @@ export default class SeamCarving extends Vue {
         resolve(() => {
           const action = event.data.action;
           const data = event.data.data;
-          const buffer = data.buffer;
+          if (rotated) {
+            const width = data.width;
+            const height = data.height;
+            data.width = height;
+            data.height = width;
+            const array = new Uint8ClampedArray(data.buffer);
+            const newArray = rotateImageData({ data: array, width, height });
+            const newBuffer = newArray.data.buffer;
+            data.buffer = newBuffer;
+          }
+          console.log(data);
           const newImageData = new ImageData(
-            new Uint8ClampedArray(buffer),
+            new Uint8ClampedArray(data.buffer),
             data.width,
             data.height
           );
@@ -225,12 +238,30 @@ export default class SeamCarving extends Vue {
         });
       };
 
+      if (rotated) {
+        if (payload) {
+          if (payload.width && payload.height) {
+            const width = payload.width;
+            const height = payload.height;
+            payload.width = height;
+            payload.height = width;
+            if (payload.buffer) {
+              const array = new Uint8ClampedArray(payload.buffer);
+              const newArray = rotateImageData({ data: array, width, height });
+              const newBuffer = newArray.data.buffer;
+              payload.buffer = newBuffer;
+            }
+          }
+        }
+      }
+
+      console.log(payload);
       this.worker.postMessage(
         {
           action: type,
           data: payload || {}
         },
-        transferable || []
+        payload && payload.buffer ? [payload.buffer] : []
       );
     });
   }
