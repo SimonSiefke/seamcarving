@@ -1,4 +1,4 @@
-# Seam Carving
+# Seam Carving ⛏
 
 > A Seam Carving implementation in Typescript & Vue.js.
 
