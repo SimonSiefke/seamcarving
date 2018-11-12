@@ -4,7 +4,7 @@
 
 ## Demo
 
-<a href="https://seamcarving.now.sh" target="_blank">https://seamcarving.now.sh</a> 👈
+[https://seamcarving.now.sh](https://seamcarving.now.sh) 👈
 
 ## Quickstart 🚀
 
