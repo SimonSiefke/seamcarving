@@ -7,27 +7,7 @@
 <script lang="ts">
 import { Component, Prop, Vue, Watch } from "vue-property-decorator";
 import * as dat from "dat.gui";
-
-type ActionType =
-  | "REMOVE_SEAMS"
-  | "ADD_SEAMS"
-  | "SHOW_SEAMS"
-  | "SHOW_SMALL_SEAMS"
-  | "REMOVE_SMALL_SEAMS"
-  | "INITIALIZE";
-
-interface Action {
-  type: ActionType;
-
-  payload?: {
-    numberOfSeams?: number;
-    width?: number;
-    height?: number;
-    data?: number;
-    buffer?: ArrayBuffer | SharedArrayBuffer;
-  };
-  transferable?: any[];
-}
+import { Action } from "./action";
 
 @Component
 export default class SeamCarving extends Vue {
@@ -239,23 +219,15 @@ export default class SeamCarving extends Vue {
   private async applyAction(action: Action) {
     const { type, payload, transferable } = action;
     return new Promise<() => void>(resolve => {
-      // const width = this.originalImageData!.width;
-      // const height = this.originalImageData!.height;
       const ctx = this.$refs.canvas.getContext(
         "2d"
       ) as CanvasRenderingContext2D;
-      // const imageData = {
-      //   width: this.originalImageData!.width,
-      //   height: this.originalImageData!.height,
-      //   data: this.originalImageData!.data.slice()
-      // };
 
       this.worker.onmessage = (event: any) => {
         resolve(() => {
           const action = event.data.action;
           const data = event.data.data;
           const buffer = data.buffer;
-
           const newImageData = new ImageData(
             new Uint8ClampedArray(buffer),
             data.width,
@@ -274,18 +246,6 @@ export default class SeamCarving extends Vue {
         },
         transferable || []
       );
-      // this.worker.postMessage(
-      //   {
-      //     action: type,
-      //     data: {
-      //       width:action.payload.wi,
-      //       height,
-      //       buffer: imageData.data.buffer,
-      //       numberOfSeams: Math.abs(numberOfSeams)
-      //     }
-      //   },
-      //   [imageData.data.buffer]
-      // );
     });
   }
 
