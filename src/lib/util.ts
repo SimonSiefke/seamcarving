@@ -41,3 +41,21 @@ export function pixelAt(imageData: ImageData, x: number, y: number) {
   const a = imageData.data[index + 3];
   return { r, g, b, a };
 }
+
+export function rotateImageData(imageData: ImageData) {
+  const { width, height, data } = imageData;
+  const newImageData = new Uint8ClampedArray(width * height * 4);
+  for (let x = 0; x < width; x++) {
+    for (let y = 0; y < height; y++) {
+      const oldIndex = y * width + x;
+      const newIndex = x * height + y;
+      newImageData[newIndex] = data[oldIndex];
+    }
+  }
+
+  return {
+    width: height,
+    height: width,
+    data: newImageData
+  };
+}

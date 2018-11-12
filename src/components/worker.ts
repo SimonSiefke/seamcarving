@@ -16,12 +16,15 @@ let cumulatedEnergyMatrix: CumulatedEnergyMatrix;
 let energyMatrix: EnergyMatrix;
 let smallEnergyMatrix: EnergyMatrix;
 let smallCumulatedEnergyMatrix: CumulatedEnergyMatrix;
+let imageData: ImageData;
+let initializationPromise: Promise<void>
 
 /**
  * Computes and assigns the energy matrix and the cumulated energy matrix for the given image data. This must only be done once for every image.
- * @param imageData - the image data
+ * @param _imageData - the image data
  */
-function onInitialize(imageData: ImageData) {
+async function onInitialize(_imageData: ImageData) {
+  imageData = _imageData;
   const { width, height, data } = imageData;
   energyMatrix = computeEnergyMatrix({
     width,
@@ -41,37 +44,48 @@ function onInitialize(imageData: ImageData) {
   smallCumulatedEnergyMatrix = computeCumulatedEnergyMatrix(smallEnergyMatrix);
 }
 
-addEventListener("message", event => {
+addEventListener("message", async event => {
+  if(initializationPromise){
+    await initializationPromise
+  }
   const action = event.data.action;
   const data = event.data.data;
-  const buffer = data.buffer;
-  const { width, height, numberOfSeams } = data;
-  const array = new Uint8ClampedArray(buffer);
-  onInitialize({ width, height, data: array });
-
-  const seams = computeSeams(cumulatedEnergyMatrix, numberOfSeams);
-  const smallSeams = computeSeams(
-    smallCumulatedEnergyMatrix,
-    Math.floor(numberOfSeams / factor)
-  );
+  // const buffer = data.buffer;
+  // const { width, height, numberOfSeams } = data;
+  // const array = new Uint8ClampedArray(buffer);
+  // onInitialize({ width, height, data: array });
+  console.log(data);
+  let seams!: Uint32Array[];
+  let smallSeams!: Uint32Array[];
+  if (data.numberOfSeams) {
+    const numberOfSeams = Math.abs(data.numberOfSeams);
+    seams = computeSeams(cumulatedEnergyMatrix, numberOfSeams);
+    smallSeams = computeSeams(
+      smallCumulatedEnergyMatrix,
+      Math.floor(numberOfSeams / factor)
+    );
+  }
 
   switch (action) {
     case "INITIALIZE":
-      onInitialize({ width, height, data: array });
+      console.log("initialize");
+      const { width, height, buffer } = data;
+      const array = new Uint8ClampedArray(buffer);
+      initializationPromise= onInitialize({ width, height, data: array });
     case "REMOVE_SEAMS":
-      onRemoveSeams({ width, height, data: array }, seams);
+      onRemoveSeams(imageData, seams);
       break;
     case "REMOVE_SMALL_SEAMS":
-      onRemoveNSeamsFrom1({ width, height, data: array }, smallSeams);
+      onRemoveNSeamsFrom1(imageData, smallSeams);
       break;
     case "ADD_SEAMS":
-      onAddSeams({ width, height, data: array }, seams);
+      onAddSeams(imageData, seams);
       break;
     case "SHOW_SEAMS":
-      onShowSeams({ width, height, data: array }, seams);
+      onShowSeams(imageData, seams);
       break;
     case "SHOW_SMALL_SEAMS":
-      onShowSmallSeams({ width, height, data: array }, seams);
+      onShowSmallSeams(imageData, seams);
       break;
     default:
       break;

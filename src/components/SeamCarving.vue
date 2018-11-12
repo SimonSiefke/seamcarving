@@ -13,11 +13,20 @@ type ActionType =
   | "ADD_SEAMS"
   | "SHOW_SEAMS"
   | "SHOW_SMALL_SEAMS"
-  | "REMOVE_SMALL_SEAMS";
+  | "REMOVE_SMALL_SEAMS"
+  | "INITIALIZE";
 
 interface Action {
   type: ActionType;
-  numberOfSeams: number;
+
+  payload?: {
+    numberOfSeams?: number;
+    width?: number;
+    height?: number;
+    data?: number;
+    buffer?: ArrayBuffer | SharedArrayBuffer;
+  };
+  transferable?: any[];
 }
 
 @Component
@@ -42,14 +51,14 @@ export default class SeamCarving extends Vue {
    ************/
   get maxWidth() {
     if (this.originalImageData !== null) {
-      return this.originalImageData.width * 2;
+      return Math.round(this.originalImageData.width * 1.5);
     }
     return 0;
   }
 
   get maxHeight() {
     if (this.originalImageData !== null) {
-      return this.originalImageData.height * 2;
+      return Math.round(this.originalImageData.height * 1.5);
     }
     return 0;
   }
@@ -77,29 +86,28 @@ export default class SeamCarving extends Vue {
    ************/
   @Watch("wantedWidth")
   private async adjustWantedWidth(value: number) {
-    if (!this.originalImageData || value === this.originalImageData.width) {
+    if (
+      !this.originalImageData ||
+      value === this.originalImageData.width ||
+      value < 10
+    ) {
       return;
     }
     const numberOfAdditions = value - this.originalImageData.width;
     if (numberOfAdditions > 0) {
       this.currentAction = {
         type: "ADD_SEAMS",
-        numberOfSeams: numberOfAdditions
+        payload: {
+          numberOfSeams: numberOfAdditions
+        }
       };
     } else if (numberOfAdditions < 0) {
-      // this.currentAction = {
-      //   type: "REMOVE_SEAMS",
-      //   numberOfSeams: numberOfAdditions
-      // };
-      // this.currentAction = {
-      //   type: "SHOW_SEAMS",
-      //   numberOfSeams: numberOfAdditions
-      // };
-      const action: Action = {
+      this.currentAction = {
         type: "REMOVE_SEAMS",
-        numberOfSeams: numberOfAdditions
+        payload: {
+          numberOfSeams: numberOfAdditions
+        }
       };
-      (await this.applyAction(action))();
     }
   }
   @Watch("currentAction")
@@ -216,21 +224,31 @@ export default class SeamCarving extends Vue {
     ctx.drawImage(image, 0, 0);
     this.originalImageData = ctx.getImageData(0, 0, width, height);
     this.updateGUI();
+    const buffer = this.originalImageData.data.slice().buffer;
+    this.applyAction({
+      type: "INITIALIZE",
+      payload: {
+        width,
+        height,
+        buffer
+      },
+      transferable: [buffer]
+    });
   }
 
   private async applyAction(action: Action) {
-    const { type, numberOfSeams } = action;
+    const { type, payload, transferable } = action;
     return new Promise<() => void>(resolve => {
-      const width = this.originalImageData!.width;
-      const height = this.originalImageData!.height;
+      // const width = this.originalImageData!.width;
+      // const height = this.originalImageData!.height;
       const ctx = this.$refs.canvas.getContext(
         "2d"
       ) as CanvasRenderingContext2D;
-      const imageData = {
-        width: this.originalImageData!.width,
-        height: this.originalImageData!.height,
-        data: this.originalImageData!.data.slice()
-      };
+      // const imageData = {
+      //   width: this.originalImageData!.width,
+      //   height: this.originalImageData!.height,
+      //   data: this.originalImageData!.data.slice()
+      // };
 
       this.worker.onmessage = (event: any) => {
         resolve(() => {
@@ -252,15 +270,22 @@ export default class SeamCarving extends Vue {
       this.worker.postMessage(
         {
           action: type,
-          data: {
-            width,
-            height,
-            buffer: imageData.data.buffer,
-            numberOfSeams: Math.abs(numberOfSeams)
-          }
+          data: payload || {}
         },
-        [imageData.data.buffer]
+        transferable || []
       );
+      // this.worker.postMessage(
+      //   {
+      //     action: type,
+      //     data: {
+      //       width:action.payload.wi,
+      //       height,
+      //       buffer: imageData.data.buffer,
+      //       numberOfSeams: Math.abs(numberOfSeams)
+      //     }
+      //   },
+      //   [imageData.data.buffer]
+      // );
     });
   }
 
