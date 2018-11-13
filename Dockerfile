@@ -13,4 +13,4 @@ COPY . .
 # Build and export the app
 RUN npm run build
 
-COPY dist /public
+COPY ./dist /public
