@@ -1,6 +1,9 @@
 <template>
   <section>
     <canvas ref="canvas" />
+    <input
+      ref="input"
+      type="file">
   </section>
 </template>
 
@@ -22,6 +25,7 @@ export default class SeamCarving extends Vue {
   private currentWidth_ = 100; // the width of the transformed image
   private executionInterrupted = false; // whether the execution of the current action was interrupted by another action (used to apply only the latest user action instead of queueing them up)
   private image = new Image(); // the image for which to apply the transformations
+  private imagePath = "/assets/animal.png";
   private rotated_ = true; // vertical (default) or horizontal mode
   private gui: any; // framework for the control box
   private originalImageData: ImageData | null = null; // the data or the image without any transformations applied
@@ -148,9 +152,10 @@ export default class SeamCarving extends Vue {
    ************/
   async mounted() {
     this.gui = new dat.GUI();
-    this.gui.add(this, "wantedWidth", 10, this.maxWidth, 1).name("width");
-    this.gui.add(this, "wantedHeight", 10, this.maxHeight, 1).name("height");
-    this.gui.add(this, "reset");
+    this.gui.add(this, "wantedWidth", 10, this.maxWidth, 1).name("Width");
+    this.gui.add(this, "wantedHeight", 10, this.maxHeight, 1).name("Height");
+    this.gui.add(this, "uploadImage").name("Upload Image");
+    this.gui.add(this, "reset").name("Reset");
     this.gui.add(
       {
         Github: () => {
@@ -159,9 +164,7 @@ export default class SeamCarving extends Vue {
       },
       "Github"
     );
-    // this.gui.add(() => {
-    //   console.log("gtihub");
-    // }, "Github");
+    // this.gui.add(this, "imagePath");
 
     const imageLoaded = new Promise(resolve => {
       this.image.addEventListener("load", () => {
@@ -205,19 +208,40 @@ export default class SeamCarving extends Vue {
   }
 
   // TODO
-  private async upload(event: Event) {
+  private async uploadImage() {
     return new Promise(resolve => {
+      const input = this.$refs.input;
       const image = this.image;
-      const file = (event.target as any).files[0] as File;
-      const url = URL.createObjectURL(file);
-      image.addEventListener("load", () => {
-        image.setAttribute("width", `${image.naturalWidth}`);
-        image.setAttribute("height", `${image.naturalHeight}`);
-        this.onImageChanged();
-        resolve();
+
+      input.addEventListener("change", () => {
+        const file = (input.files as any)[0];
+        this.imagePath = file.name;
+        this.updateGUI();
+        const url = URL.createObjectURL(file);
+        image.addEventListener("load", () => {
+          image.setAttribute("width", `${image.naturalWidth}`);
+          image.setAttribute("height", `${image.naturalHeight}`);
+          this.onImageChanged();
+          resolve();
+        });
+        image.setAttribute("src", url);
+        // update all controllers
       });
-      image.setAttribute("src", url);
+      input.click();
     });
+
+    // return new Promise(resolve => {
+    //   const image = this.image;
+    //   const file = (event.target as any).files[0] as File;
+    //   const url = URL.createObjectURL(file);
+    //   image.addEventListener("load", () => {
+    //     image.setAttribute("width", `${image.naturalWidth}`);
+    //     image.setAttribute("height", `${image.naturalHeight}`);
+    //     this.onImageChanged();
+    //     resolve();
+    //   });
+    //   image.setAttribute("src", url);
+    // });
   }
 
   private async onImageChanged() {
@@ -362,11 +386,12 @@ export default class SeamCarving extends Vue {
    ********/
   $refs!: {
     canvas: HTMLCanvasElement;
+    input: HTMLInputElement;
   };
 }
 </script>
 
-<style scoped lang="stylus">
+<style  lang="stylus" scoped>
 section
   align-items center
   display flex
@@ -379,4 +404,7 @@ canvas
   height auto
   max-height 70vh
   max-width 100%
+
+input
+  display none
 </style>
