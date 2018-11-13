@@ -7,5 +7,3 @@
   :wanted-height="33"
 ></seam-carving>
 ```
-
-1. codesandbox
