@@ -1,5 +1,6 @@
 {
   "name": "Seam Carving",
   "public": true,
-  "alias": "seamcarving"
+  "alias": "seamcarving",
+  "type": "static"
 }
