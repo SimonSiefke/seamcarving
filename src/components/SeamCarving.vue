@@ -151,6 +151,17 @@ export default class SeamCarving extends Vue {
     this.gui.add(this, "wantedWidth", 10, this.maxWidth, 1).name("width");
     this.gui.add(this, "wantedHeight", 10, this.maxHeight, 1).name("height");
     this.gui.add(this, "reset");
+    this.gui.add(
+      {
+        Github: () => {
+          this.openInNewTab("https://github.com/SimonSiefke/seamcarving");
+        }
+      },
+      "Github"
+    );
+    // this.gui.add(() => {
+    //   console.log("gtihub");
+    // }, "Github");
 
     const imageLoaded = new Promise(resolve => {
       this.image.addEventListener("load", () => {
@@ -340,6 +351,10 @@ export default class SeamCarving extends Vue {
         }
       }))();
     }
+  }
+
+  private openInNewTab(url: string) {
+    (window.open(url, "_blank") as Window).focus();
   }
 
   /********
