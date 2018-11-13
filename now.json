@@ -1,6 +1,7 @@
 {
   "version": 2,
   "name": "seamcarving",
+  "alias": "seamcarving",
   "builds": [
     {
       "src": "package.json",
