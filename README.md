@@ -1,5 +1,7 @@
 # Seam Carving ⛏
 
+[![Greenkeeper badge](https://badges.greenkeeper.io/SimonSiefke/seamcarving.svg)](https://greenkeeper.io/)
+
 > A Seam Carving implementation in Typescript & Vue.js.
 
 ## Demo
