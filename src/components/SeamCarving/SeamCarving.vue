@@ -5,7 +5,8 @@
     <basic-loading-spinner :loading="loading" />
     <input
       ref="input"
-      type="file">
+      type="file"
+      accept="image/*">
   </section>
 </template>
 
