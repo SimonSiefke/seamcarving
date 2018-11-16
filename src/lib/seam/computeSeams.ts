@@ -21,9 +21,11 @@ export default function computeSeams(
   numberOfSeams: number
 ) {
   const seams = Array.from(Array(numberOfSeams), () => new Uint32Array(height))
-  const firstRow = Array.from(cumulatedEnergyMatrix.slice(0, width))
+  const lastRow = Array.from(
+    cumulatedEnergyMatrix.slice((height - 1) * width, height * width)
+  )
   // TODO find k smallest elements faster
-  const indicesOfSmallestEnergiesInFirstRow = firstRow
+  const indicesOfSmallestEnergiesInFirstRow = lastRow
     .map((value, index) => [value, index])
     .sort(([a], [b]) => a - b)
     .slice(0, numberOfSeams)

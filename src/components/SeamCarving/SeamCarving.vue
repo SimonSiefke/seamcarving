@@ -1,6 +1,8 @@
 <template>
-  <section>
+  <section :class="{'image-loaded': imageLoaded}">
     <canvas ref="canvas" />
+    <small v-if="!imageHasBeenUploaded">Photo by <a href="https://unsplash.com/photos/_d0zgyMmYT8?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText"> Vincent van Zalinge </a> on <a href="https://unsplash.com/?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText">Unsplash </a> </small>
+    <basic-loading-spinner :loading="loading" />
     <input
       ref="input"
       type="file">
@@ -8,12 +10,17 @@
 </template>
 
 <script lang="ts">
-import { Component, Prop, Vue, Watch } from "vue-property-decorator"
+import { Component, Vue, Watch } from "vue-property-decorator"
 import * as dat from "dat.gui"
 import { Action } from "./action"
 import { rotateImageData } from "@/lib/util"
+import BasicLoadingSpinner from "@/components/BasicLoadingSpinner.vue"
 
-@Component
+@Component({
+  components: {
+    BasicLoadingSpinner
+  }
+})
 export default class SeamCarving extends Vue {
   /********
    * Data *
@@ -25,7 +32,9 @@ export default class SeamCarving extends Vue {
   private currentWidth_ = 100 // the width of the transformed image
   private executionInterrupted = false // whether the execution of the current action was interrupted by another action (used to apply only the latest user action instead of queueing them up)
   private image = new Image() // the image for which to apply the transformations
-  private imagePath = "/assets/tower.jpg" // the path of the current image
+  private imageLoaded = false // whether the image has been fully loaded or not
+  private imagePath = "/assets/bird.jpg" // the path of the current image
+  private imageHasBeenUploaded = false
   private rotated_ = true // vertical (default) or horizontal mode
   private gui: any // framework for the control box
   private originalImageData: ImageData | null = null // the data or the image without any transformations applied
@@ -35,6 +44,9 @@ export default class SeamCarving extends Vue {
   /************
    * Computed *
    ************/
+  get loading() {
+    return this.currentAction != null
+  }
   get maxWidth() {
     if (this.originalImageData !== null) {
       return Math.round(this.originalImageData.width * 1.5)
@@ -90,7 +102,7 @@ export default class SeamCarving extends Vue {
       }
     } else if (numberOfAdditions < 0) {
       this.currentAction = {
-        type: "SHOW_SEAMS",
+        type: "REMOVE_SEAMS",
         payload: {
           numberOfSeams: numberOfAdditions
         }
@@ -163,7 +175,7 @@ export default class SeamCarving extends Vue {
       },
       "Github"
     )
-    const imageLoaded = new Promise(resolve => {
+    const imageLoadedPromise = new Promise(resolve => {
       this.image.addEventListener("load", () => {
         this.image.setAttribute("width", `${this.image.naturalWidth}`)
         this.image.setAttribute("height", `${this.image.naturalHeight}`)
@@ -171,7 +183,8 @@ export default class SeamCarving extends Vue {
       })
     })
     this.image.setAttribute("src", this.imagePath)
-    await imageLoaded
+    await imageLoadedPromise
+    this.imageLoaded = true
     await this.onImageChanged()
   }
 
@@ -222,6 +235,7 @@ export default class SeamCarving extends Vue {
           resolve()
         })
         image.setAttribute("src", url)
+        this.imageHasBeenUploaded = true
       })
       input.click()
     })
@@ -369,16 +383,38 @@ export default class SeamCarving extends Vue {
 section
   align-items center
   display flex
+  flex-direction column
   height 100vh
   justify-content center
+  opacity 1
+  transition opacity 0.6s
+
+  &:not(.image-loaded)
+    opacity 0
 
 canvas
   align-self center
+  background white
   display block
   height auto
   max-height 70vh
   max-width 100%
 
+small
+  color white
+  font-family Arial, sans-serif
+  margin-top 0.3rem
+
+  a
+    color var(--theme-color)
+    text-decoration none
+
 input
   display none
+
+.basic-loading-spinner
+  left 50%
+  position absolute
+  top 50%
+  transform translate(-50%, -50%)
 </style>

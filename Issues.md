@@ -1,4 +1,5 @@
-1. loading spinner
+1. fix width & height options
+1. show seams option
 1. seamcarving api:
 
 ```html

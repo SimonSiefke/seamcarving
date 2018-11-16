@@ -6,7 +6,7 @@
 
 <script lang="ts">
 import { Component, Vue } from "vue-property-decorator"
-import SeamCarving from "@/components/SeamCarving.vue"
+import SeamCarving from "@/components/SeamCarving/SeamCarving.vue"
 
 @Component({
   components: {
@@ -16,6 +16,9 @@ import SeamCarving from "@/components/SeamCarving.vue"
 export default class App extends Vue {}
 </script>
 <style lang="stylus">
+:root
+  --theme-color #44ABDA
+
 body
   background black
   margin 0
