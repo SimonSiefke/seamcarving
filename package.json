@@ -6,7 +6,7 @@
     "dev": "vue-cli-service serve",
     "now-build": "vue-cli-service build",
     "lint": "vue-cli-service lint",
-    "deploy": "npm run build && now && now alias"
+    "deploy": "now && now alias"
   },
   "dependencies": {
     "dat.gui": "^0.7.3",
@@ -72,7 +72,8 @@
       "vue-cli-service lint",
       "git add"
     ]
-  },"prettier": {
-    "semi":false
+  },
+  "prettier": {
+    "semi": false
   }
 }
