@@ -2,18 +2,18 @@ export type ActionType =
   | "REMOVE_SEAMS"
   | "ADD_SEAMS"
   | "SHOW_SEAMS"
-  | "INITIALIZE";
+  | "INITIALIZE"
 
 export interface Action {
-  type: ActionType;
+  type: ActionType
   /**
    * parameters for the webworker to work with
    */
   payload?: {
-    numberOfSeams?: number;
-    width?: number;
-    height?: number;
-    data?: number;
-    buffer?: ArrayBuffer | SharedArrayBuffer;
-  };
+    numberOfSeams?: number
+    width?: number
+    height?: number
+    data?: number
+    buffer?: ArrayBuffer | SharedArrayBuffer
+  }
 }

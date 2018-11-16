@@ -1,5 +1,5 @@
 interface window {
   Worker: {
-    new (): any;
-  };
+    new (): any
+  }
 }
