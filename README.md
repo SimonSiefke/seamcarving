@@ -16,3 +16,8 @@ cd seamcarving &&
 npm install &&
 npm run dev
 ```
+
+## Credits
+
+- Layout based on [http://zhangwenli.com/Polyvia/image.html](http://zhangwenli.com/Polyvia/image.html) by [Olivia](https://github.com/Ovilia/Polyvia)
+- Loading Spinner based on [https://codepen.io/aurer/pen/jEGbA](https://codepen.io/aurer/pen/jEGbA) by [Aurer](https://codepen.io/aurer/pen/jEGbA)
