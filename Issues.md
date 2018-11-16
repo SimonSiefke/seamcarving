@@ -1,3 +1,4 @@
+1. loading spinner
 1. seamcarving api:
 
 ```html

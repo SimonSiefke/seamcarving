@@ -1,9 +1,9 @@
-import { EnergyMatrix } from "./computeEnergyMatrix";
+import { EnergyMatrix } from "./computeEnergyMatrix"
 
 export interface CumulatedEnergyMatrix {
-  width: number;
-  height: number;
-  cumulatedEnergyMatrix: Float32Array;
+  width: number
+  height: number
+  cumulatedEnergyMatrix: Float32Array
 }
 
 /**
@@ -19,21 +19,21 @@ export default function computeCumulatedEnergyMatrix({
   width,
   height
 }: EnergyMatrix) {
-  const cumulatedEnergyMatrix = new Float32Array(width * height);
+  const cumulatedEnergyMatrix = new Float32Array(width * height)
   for (let x = 0; x < width; x++) {
-    cumulatedEnergyMatrix[x] = energyMatrix[x];
+    cumulatedEnergyMatrix[x] = energyMatrix[x]
   }
   for (let y = 1; y < height; y++) {
-    const yIndex = y * width;
-    const yIndexTop = (y - 1) * width;
+    const yIndex = y * width
+    const yIndexTop = (y - 1) * width
     for (let x = 0; x < width; x++) {
-      const energyTopLeft = energyMatrix[yIndexTop + Math.max(x - 1, 0)];
-      const energyTop = energyMatrix[yIndexTop + x];
-      const energyTopRight = energyMatrix[yIndexTop + Math.min(x, width - 1)];
+      const energyTopLeft = energyMatrix[yIndexTop + Math.max(x - 1, 0)]
+      const energyTop = energyMatrix[yIndexTop + x]
+      const energyTopRight = energyMatrix[yIndexTop + Math.min(x, width - 1)]
       cumulatedEnergyMatrix[yIndex + x] =
         energyMatrix[yIndex + x] +
-        Math.min(energyTopLeft, energyTop, energyTopRight);
+        Math.min(energyTopLeft, energyTop, energyTopRight)
     }
   }
-  return { cumulatedEnergyMatrix, width, height };
+  return { cumulatedEnergyMatrix, width, height }
 }

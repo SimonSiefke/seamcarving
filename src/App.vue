@@ -5,8 +5,8 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue } from "vue-property-decorator";
-import SeamCarving from "@/components/SeamCarving.vue";
+import { Component, Vue } from "vue-property-decorator"
+import SeamCarving from "@/components/SeamCarving.vue"
 
 @Component({
   components: {
