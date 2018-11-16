@@ -392,7 +392,7 @@ section
   height 100vh
   justify-content center
   opacity 1
-  transition opacity 0.6s
+  transition opacity 0.5s
 
   &:not(.image-loaded)
     opacity 0
