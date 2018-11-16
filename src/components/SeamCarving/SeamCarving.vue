@@ -158,6 +158,14 @@ export default class SeamCarving extends Vue {
     }
   }
 
+  @Watch("imageLoaded")
+  private async showGUI(value: boolean) {
+    if (value) {
+      ;(document.querySelector(".dg.ac") as HTMLDivElement).style.visibility =
+        "visible"
+    }
+  }
+
   /************
    * Mounted *
    ************/
@@ -184,7 +192,6 @@ export default class SeamCarving extends Vue {
     })
     this.image.setAttribute("src", this.imagePath)
     await imageLoadedPromise
-    this.imageLoaded = true
     await this.onImageChanged()
   }
 
@@ -204,11 +211,9 @@ export default class SeamCarving extends Vue {
       switch (controller.property) {
         case "wantedWidth":
           controller.__max = this.maxWidth
-          // controller.setValue(this.wantedWidth);
           break
         case "wantedHeight":
           controller.__max = this.maxHeight
-          // controller.setValue(this.wantedHeight);
           break
         default:
           break
@@ -217,7 +222,6 @@ export default class SeamCarving extends Vue {
     }
   }
 
-  // TODO
   private async uploadImage() {
     return new Promise(resolve => {
       const input = this.$refs.input
@@ -256,6 +260,7 @@ export default class SeamCarving extends Vue {
     ctx.drawImage(image, 0, 0)
     this.originalImageData = ctx.getImageData(0, 0, width, height)
     this.updateGUI()
+    this.imageLoaded = true
     // @ts-ignore
     this.worker = new Worker("./worker.ts", { type: "module" })
     const buffer = this.originalImageData.data.slice().buffer
@@ -379,7 +384,7 @@ export default class SeamCarving extends Vue {
 }
 </script>
 
-<style  lang="stylus" scoped>
+<style  lang="stylus">
 section
   align-items center
   display flex
@@ -409,7 +414,7 @@ small
     color var(--theme-color)
     text-decoration none
 
-input
+input[type='file']
   display none
 
 .basic-loading-spinner
@@ -417,4 +422,8 @@ input
   position absolute
   top 50%
   transform translate(-50%, -50%)
+
+// dat gui
+.dg.ac
+  visibility hidden
 </style>
