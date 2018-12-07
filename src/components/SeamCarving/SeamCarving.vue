@@ -2,7 +2,7 @@
   <section :class="{'image-loaded': imageLoaded}">
     <canvas ref="canvas" />
     <small v-if="!imageHasBeenUploaded">Photo by <a href="https://unsplash.com/photos/_d0zgyMmYT8?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText"> Vincent van Zalinge </a> on <a href="https://unsplash.com/?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText">Unsplash </a> </small>
-    <basic-loading-spinner :loading="loading" />
+    <BasicLoadingSpinner :loading="loading" />
     <input
       ref="input"
       type="file"
