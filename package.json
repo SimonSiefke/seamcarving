@@ -1,13 +1,15 @@
 {
-  "name": "seamcarving2",
+  "name": "seam-carving",
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "serve": "vue-cli-service serve",
-    "build": "vue-cli-service build",
-    "lint": "vue-cli-service lint"
+    "dev": "vue-cli-service serve",
+    "now-build": "vue-cli-service build",
+    "lint": "vue-cli-service lint",
+    "deploy": "now && now alias"
   },
   "dependencies": {
+    "dat.gui": "^0.7.3",
     "register-service-worker": "^1.5.2",
     "vue": "^2.5.17",
     "vue-class-component": "^6.0.0",
@@ -28,7 +30,8 @@
     "stylus": "^0.54.5",
     "stylus-loader": "^3.0.2",
     "typescript": "^3.0.0",
-    "vue-template-compiler": "^2.5.17"
+    "vue-template-compiler": "^2.5.17",
+    "worker-plugin": "^2.0.1"
   },
   "eslintConfig": {
     "root": true,
@@ -36,7 +39,7 @@
       "node": true
     },
     "extends": [
-      "plugin:vue/essential",
+      "plugin:vue/recommended",
       "@vue/prettier",
       "@vue/typescript"
     ],
@@ -67,5 +70,8 @@
       "vue-cli-service lint",
       "git add"
     ]
+  },
+  "prettier": {
+    "semi": false
   }
 }

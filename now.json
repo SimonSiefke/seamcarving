@@ -1,0 +1,17 @@
+{
+  "version": 2,
+  "name": "seamcarving",
+  "alias": "seamcarving",
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@now/static-build"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/manifest.json",
+      "dest": "/manifest.json"
+    }
+  ]
+}
