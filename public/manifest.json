@@ -1,6 +1,6 @@
 {
-  "name": "seamcarving2",
-  "short_name": "seamcarving2",
+  "name": "Seam Carving",
+  "short_name": "Seam Carving",
   "icons": [
     {
       "src": "./img/icons/android-chrome-192x192.png",
@@ -13,8 +13,9 @@
       "type": "image/png"
     }
   ],
+  "description": "Seam Carving for content-aware image resizing",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#000000",
-  "theme_color": "#4DBA87"
+  "background_color": "#ffffff",
+  "theme_color": "#000000"
 }

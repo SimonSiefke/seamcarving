@@ -1,29 +1,23 @@
-# seamcarving2
+[![Greenkeeper badge](https://badges.greenkeeper.io/SimonSiefke/seamcarving.svg)](https://greenkeeper.io/)
 
-## Project setup
-```
-npm install
-```
+# Seam Carving ⛏
 
-### Compiles and hot-reloads for development
-```
-npm run serve
-```
+> A Seam Carving implementation in Typescript & Vue.js.
 
-### Compiles and minifies for production
-```
-npm run build
-```
+## Demo
 
-### Run your tests
-```
-npm run test
+[https://seamcarving.now.sh](https://seamcarving.now.sh) 👈
+
+## Quickstart 🚀
+
+```bash
+git clone https://github.com/SimonSiefke/seamcarving &&
+cd seamcarving &&
+npm install &&
+npm run dev
 ```
 
-### Lints and fixes files
-```
-npm run lint
-```
+## Credits
 
-### Customize configuration
-See [Configuration Reference](https://cli.vuejs.org/config/).
+- Layout based on [http://zhangwenli.com/Polyvia/image.html](http://zhangwenli.com/Polyvia/image.html) by [Olivia](https://github.com/Ovilia/Polyvia)
+- Loading Spinner based on [https://codepen.io/aurer/pen/jEGbA](https://codepen.io/aurer/pen/jEGbA) by [Aurer](https://codepen.io/aurer/pen/jEGbA)
